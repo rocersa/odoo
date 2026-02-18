@@ -50,7 +50,7 @@ class ProductTemplate(models.Model):
         Ref#4: odoo/addons/website_sale/security/website_sale.xml
             Trace line: 7
         """
-        current_website_id = self._context.get('website_id')
+        current_website_id = self.env.context.get('website_id')
         for record in self.sudo():
             if current_website_id:
                 restricts = record.public_website_ids | record.website_id
