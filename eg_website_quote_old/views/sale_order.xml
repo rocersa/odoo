@@ -1,0 +1,23 @@
+<odoo>
+    <record id="eg_view_order_form_is_rfq_from_website" model="ir.ui.view">
+        <field name="name">eg.view.order.form.is.rfq.from.website</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='order_details']" position="inside">
+                <field name="is_rfq_from_website"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_rfq_from_website" model="ir.actions.act_window">
+        <field name="name">Requested Quotation</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,kanban,activity</field>
+        <field name="domain">[('is_rfq_from_website', '!=', False)]</field>
+        <field name="context">{'show_sale': True, 'search_default_order_confirmed': 1, 'search_default_from_website': 1}</field>
+    </record>
+
+    <menuitem id="menu_orders_rfq_from_website" name="Requested Quotation" action="action_rfq_from_website"
+                parent="website_sale.menu_orders" sequence="1"/>
+</odoo>

@@ -1,0 +1,125 @@
+<odoo>
+    <template id="website_sale_navigation_buttons_quote" inherit_id="website_sale.navigation_buttons">
+        <xpath expr="//a[@name='website_sale_main_button']" position="attributes">
+            <attribute name="t-if">not website.is_disable_checkout</attribute>
+        </xpath>
+        <xpath expr="//div/t[1]" position="inside">
+            <!-- For public/guest users - show button with data attribute to trigger modal -->
+            <a role="button" t-if="website.is_disable_checkout and request.env.user._is_public()"
+               t-attf-class="#{_cta_classes} btn btn-primary #{not website_sale_order._is_cart_ready() and 'disabled'} #{_form_send_navigation and 'order-lg-3 w-100 w-lg-auto ms-lg-auto' or 'w-100'} get-quote-btn"
+               href="#"
+               data-bs-toggle="modal"
+               data-bs-target="#guestQuoteModal"
+               data-is-logged-in="true">
+                Get Delivery Quote <i class="fa fa-angle-right ms-2 fw-light"/>
+            </a>
+            <!-- For logged-in users - direct link to quote page -->
+            <a role="button" t-if="website.is_disable_checkout and not request.env.user._is_public()"
+               t-attf-class="#{_cta_classes} btn btn-primary #{not website_sale_order._is_cart_ready() and 'disabled'} #{_form_send_navigation and 'order-lg-3 w-100 w-lg-auto ms-lg-auto' or 'w-100'}"
+               t-attf-href="/shop/get/quote">
+                Get Delivery Quote <i class="fa fa-angle-right ms-2 fw-light"/>
+            </a>
+        </xpath>
+    </template>
+
+    <!-- Modal for Guest Quote Request -->
+    <template id="guest_quote_modal" name="Guest Quote Request Modal">
+        <div class="modal fade" id="guestQuoteModal" tabindex="-1" role="dialog" aria-labelledby="guestQuoteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="guestQuoteModalLabel">Request a Shipping Quote</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"/>
+                    </div>
+                    <form id="guestQuoteForm" method="post" action="/shop/get/quote">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="modal-body">
+                            <p class="text-muted mb-3">Please provide your contact information to receive your shipping quote.</p>
+                            
+                            <h6 class="mb-3">Contact Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="guest_name" class="form-label">Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="guest_name" name="guest_name" required="required" placeholder="Enter your full name"/>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="guest_email" class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="guest_email" name="guest_email" required="required" placeholder="your.email@example.com"/>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="guest_phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="guest_phone" name="guest_phone" placeholder="(555) 123-4567"/>
+                            </div>
+                            
+                            <h6 class="mb-3 mt-4">Delivery Address <span class="text-danger">*</span></h6>
+                            <div class="address_autoformat">
+                                <div class="mb-3">
+                                    <label for="guest_street" class="form-label">Street Address <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="guest_street" 
+                                           name="street" 
+                                           required="required" 
+                                           placeholder="123 Main St"
+                                           t-att-data-autocomplete-enabled="1 if website.has_google_places_api_key() else 0"/>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="guest_city" class="form-label">City <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="guest_city" name="city" required="required" placeholder="City"/>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="guest_zip" class="form-label">Postcode <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="guest_zip" name="zip" required="required" placeholder="1234"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="guest_state" class="form-label">State/Territory</label>
+                                        <select class="form-control" id="guest_state" name="state_id">
+                                            <option value="">State/Territory</option>
+                                            <t t-foreach="request.env['res.country.state'].sudo().search([('country_id', '=', request.env.ref('base.au').id)])" t-as="state">
+                                                <option t-att-value="state.id">
+                                                    <t t-out="state.name"/>
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="guest_country" class="form-label">Country <span class="text-danger">*</span></label>
+                                        <select class="form-control" id="guest_country" name="country_id" required="required">
+                                            <option value="">Select a country...</option>
+                                            <t t-foreach="request.env['res.country'].sudo().search([])" t-as="country">
+                                                <option t-att-value="country.id" t-att-data-code="country.code" t-att-selected="'selected' if country.code == 'AU' else None">
+                                                    <t t-out="country.name"/>
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h6 class="mb-3 mt-4">Additional Information</h6>
+                            <div class="mb-3">
+                                <label for="guest_message" class="form-label">Message (Optional)</label>
+                                <textarea class="form-control" id="guest_message" name="guest_message" rows="3" placeholder="Any special requirements or questions..."/>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Submit Order for Delivery Pricing</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Inject modal into cart page -->
+    <template id="cart_page_with_modal" inherit_id="website_sale.cart">
+        <xpath expr="//div[@id='shop_cart']" position="before">
+            <t t-call="eg_website_quote.guest_quote_modal"/>
+        </xpath>
+    </template>
+</odoo>
