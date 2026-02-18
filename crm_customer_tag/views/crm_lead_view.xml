@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit the CRM Lead Form View -->
+    <record id="crm_lead_view_form_inherit_customer_tag" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.customer.tag</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Change tag_ids label to "Opportunity Type" in the lead section -->
+            <xpath
+                expr="//group[@name='lead_priority']/field[@name='tag_ids']"
+                position="attributes"
+            >
+                <attribute name="string">Opportunity Type</attribute>
+            </xpath>
+
+            <!-- Add Customer Type field after tag_ids in the lead section -->
+            <xpath
+                expr="//group[@name='lead_priority']/field[@name='tag_ids']"
+                position="after"
+            >
+                <field
+                    name="category_id"
+                    string="Customer Type"
+                    widget="many2many_tags"
+                    options="{'color_field': 'color', 'no_create_edit': True}"
+                    readonly="not partner_id"
+                />
+            </xpath>
+
+            <!-- Change tag_ids label to "Opportunity Type" in the opportunity section -->
+            <xpath
+                expr="//field[@name='type']/following-sibling::group[1]/field[@name='tag_ids']"
+                position="attributes"
+            >
+                <attribute name="string">Opportunity Type</attribute>
+            </xpath>
+
+            <!-- Add Customer Type field after tag_ids in the opportunity section -->
+            <xpath
+                expr="//field[@name='type']/following-sibling::group[1]/field[@name='tag_ids']"
+                position="after"
+            >
+                <field
+                    name="category_id"
+                    string="Customer Type"
+                    widget="many2many_tags"
+                    options="{'color_field': 'color', 'no_create_edit': True}"
+                    readonly="not partner_id"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit the CRM Lead Kanban View -->
+    <record
+        id="crm_case_kanban_view_leads_inherit_customer_tag"
+        model="ir.ui.view"
+    >
+        <field name="name">crm.lead.kanban.lead.inherit.customer.tag</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+        <field name="arch" type="xml">
+            <!-- Add Customer Type field after tag_ids in kanban view -->
+            <xpath expr="//field[@name='tag_ids']" position="before">
+                <field
+                    name="category_id"
+                    widget="many2many_tags"
+                    options="{'color_field': 'color'}"
+                />
+            </xpath>
+        </field>
+    </record>
+</odoo>

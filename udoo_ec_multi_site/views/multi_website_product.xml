@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="multi_website_product_report_tree" model="ir.ui.view">
+        <field name="name">multi.website.product.report.tree</field>
+        <field name="model">multi.website.product.report</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="website_sequence"/>
+                <field name="product_published"/>
+                <field name="product_id"/>
+                <field name="website_id"/>
+                <field name="product_website_url" optional="show"/>
+                <field name="is_storable" optional="show"/>
+                <field name="type" optional="show"/>
+                <field name="invoice_policy" optional="hide"/>
+                <field name="has_websites_set" optional="show"/>
+                <button string="Open Website" name="action_go_to_website" type="object" icon="fa-globe"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="multi_website_product_report_graph" model="ir.ui.view">
+        <field name="name">multi.website.product.report.graph</field>
+        <field name="model">multi.website.product.report</field>
+        <field name="arch" type="xml">
+            <graph type="pie">
+                <field name="product_id"/>
+                <field name="website_id"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- <record id="multi_website_product_report_search" model="ir.ui.view">
+        <field name="name">multi.website.product.report.search</field>
+        <field name="model">multi.website.product.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id" filter_domain="[('product_id', 'ilike', self)]"/>
+                <field name="website_id" filter_domain="[('website_id', 'ilike', self)]"/>
+                <separator/>
+                <filter string="Published" name="filter_published" domain="[('product_published', '=', True)]"/>
+                <filter string="Unlisted" name="filter_unlisted" domain="[('product_published', '=', False)]"/>
+                <filter string="All-Website Visibility" name="filter_all_websites" domain="[('has_websites_set', '=', False)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Website" name="group_by_website" context="{'group_by': 'website_id'}"/>
+                    <filter string="Product" name="group_by_product" context="{'group_by': 'product_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record> -->
+
+    <record id="action_product_website_listing" model="ir.actions.act_window">
+        <field name="name">Products Listing</field>
+        <field name="res_model">multi.website.product.report</field>
+        <field name="view_mode">list,graph</field>
+        <field name="context">{}</field>
+    </record>
+
+    <menuitem sequence="70" id="menus_ecomerce_listing" name="Listing Tools" parent="website_sale.menu_ecommerce" groups="sales_team.group_sale_manager">
+        <menuitem sequence="1" id="menu_product_publishing" name="Products Listing" action="action_product_website_listing"/>
+    </menuitem>
+</odoo>
