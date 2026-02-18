@@ -15,7 +15,6 @@ class WebsiteSaleHttpCase(HttpCase):
         # Models
         ProductAttribute = cls.env["product.attribute"]
         ProductAttributeValue = cls.env["product.attribute.value"]
-        ProductAttributeLine = cls.env["product.template.attribute.line"]
         cls.product_attribute = ProductAttribute.create(
             {
                 "name": "Test Special Color",
@@ -51,47 +50,57 @@ class WebsiteSaleHttpCase(HttpCase):
                 "html_color": "#FDEA01",
             }
         )
-        cls.product_template = cls.env.ref("product.product_product_4_product_template")
-        cls.product_attribute_line = ProductAttributeLine.create(
+        cls.product_template = cls.env["product.template"].create(
             {
-                "product_tmpl_id": cls.product_template.id,
-                "attribute_id": cls.product_attribute.id,
-                "value_ids": [
+                "name": "Test Customizable Product",
+                "list_price": 100.0,
+                "is_published": True,
+                "attribute_line_ids": [
                     (
-                        6,
                         0,
-                        [
-                            cls.product_attribute_value_red.id,
-                            cls.product_attribute_value_green.id,
-                        ],
+                        0,
+                        {
+                            "attribute_id": cls.product_attribute.id,
+                            "value_ids": [
+                                (
+                                    6,
+                                    0,
+                                    [
+                                        cls.product_attribute_value_red.id,
+                                        cls.product_attribute_value_green.id,
+                                    ],
+                                )
+                            ],
+                        },
                     )
                 ],
             }
         )
-        cls.product_template.write(
-            {"attribute_line_ids": [(4, cls.product_attribute_line.id)]}
-        )
-        cls.product_template_11 = cls.env.ref(
-            "product.product_product_11_product_template"
-        )
-        cls.product_attribute_line_11 = ProductAttributeLine.create(
+        cls.product_template_11 = cls.env["product.template"].create(
             {
-                "product_tmpl_id": cls.product_template_11.id,
-                "attribute_id": cls.product_attribute.id,
-                "value_ids": [
+                "name": "Test Secondary Product",
+                "list_price": 200.0,
+                "is_published": True,
+                "attribute_line_ids": [
                     (
-                        6,
                         0,
-                        [
-                            cls.product_attribute_value_red.id,
-                            cls.product_attribute_value_blue.id,
-                        ],
+                        0,
+                        {
+                            "attribute_id": cls.product_attribute.id,
+                            "value_ids": [
+                                (
+                                    6,
+                                    0,
+                                    [
+                                        cls.product_attribute_value_red.id,
+                                        cls.product_attribute_value_blue.id,
+                                    ],
+                                )
+                            ],
+                        },
                     )
                 ],
             }
-        )
-        cls.product_template_11.write(
-            {"attribute_line_ids": [(4, cls.product_attribute_line_11.id)]}
         )
         # Active attribute's filter in /shop. By default it's disabled.
         cls.env.ref("website_sale.products_attributes").active = True
