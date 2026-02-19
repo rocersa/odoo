@@ -6,24 +6,34 @@ from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 
 class ProductAttributeValues(WebsiteSale):
+    def shop(self, page=0, category=None, search='', min_price=0.0, max_price=0.0, tags='', **post):
+        """Override shop to get base products (without attribute filters) for filter options."""
+        # Get the base domain without attribute filters to determine available filter values
+        # This ensures filter options stay consistent across all products on the page
+        base_domain = self._get_shop_domain(
+            search=search,
+            category=category,
+            attribute_value_dict={},  # No attribute filters
+        )
+        
+        # Store in session/post so _get_additional_shop_values can access it
+        post['_base_domain'] = base_domain
+        
+        return super().shop(page=page, category=category, search=search, min_price=min_price, max_price=max_price, tags=tags, **post)
+
     def _get_additional_shop_values(self, values, **kwargs):
         res = super()._get_additional_shop_values(values, **kwargs)
         attributes = values.get("attributes")
+        
         if attributes:
-            # Get products to use for determining available filter options.
-            # Use search_domain (before attribute filtering) if available, 
-            # otherwise get all published products to ensure filter options
-            # are based on all products on the page before any filters are selected.
-            search_domain = values.get("search_domain")
+            # Get base products using the base domain (without attribute filters)
+            # This ensures that available filter options are based on all products
+            # on the page before any filters are selected
+            base_domain = kwargs.get('_base_domain')
             base_products = None
             
-            if search_domain is not None:
-                # Use the base search domain (excludes attribute value filters)
-                base_products = request.env["product.template"].search(search_domain)
-            else:
-                # Fallback: Get search_product from parent, which should work
-                # if search_domain isn't available
-                base_products = values.get("search_product")
+            if base_domain is not None:
+                base_products = request.env["product.template"].search(base_domain)
             
             if base_products:
                 ProductTemplateAttributeLine = request.env[
