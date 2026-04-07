@@ -6,12 +6,14 @@ class ProductProduct(models.Model):
 
     def _get_images(self):
         images = super()._get_images()
-        seen_categories = set()
+        seen = set()
+        all_cats = []
         for category in self.product_tmpl_id.public_categ_ids.sorted('sequence'):
-            for cat in category.parents_and_self.sorted(
-                lambda c: -len(c.parent_path or '')
-            ):
-                if cat.id not in seen_categories:
-                    seen_categories.add(cat.id)
-                    images += list(cat.category_image_ids)
+            for cat in category.parents_and_self:
+                if cat.id not in seen:
+                    seen.add(cat.id)
+                    all_cats.append(cat)
+        all_cats.sort(key=lambda c: -len(c.parent_path or ''))
+        for cat in all_cats:
+            images += list(cat.category_image_ids)
         return images

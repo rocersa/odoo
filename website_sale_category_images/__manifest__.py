@@ -1,7 +1,7 @@
 {
     "name": "Website Sale Category Images",
     "summary": "Add category-level images to the product image carousel",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "category": "Website",
     "author": "Rocersa",
     "license": "LGPL-3",
