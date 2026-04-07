@@ -29,7 +29,7 @@ class ProductPublicCategoryImage(models.Model):
 
     @api.depends('image_1920', 'image_1024')
     def _compute_can_image_1024_be_zoomed(self):
-        for image in self:
+        for image in self.with_context(bin_size=False):
             image.can_image_1024_be_zoomed = (
                 image.image_1920 and is_image_size_above(image.image_1920, image.image_1024)
             )
