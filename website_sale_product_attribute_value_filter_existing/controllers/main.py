@@ -1,11 +1,12 @@
 # Copyright 2019 Tecnativa - Sergio Teruel
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
-from odoo.http import request
+from odoo.http import request, route
 
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 
 class ProductAttributeValues(WebsiteSale):
+    @route()
     def shop(self, page=0, category=None, search='', min_price=0.0, max_price=0.0, tags='', **post):
         """Override shop to get base products (without attribute filters) for filter options."""
         # Get the base domain without attribute filters to determine available filter values
