@@ -5,12 +5,36 @@
         <field name="model">product.pricelist.item</field>
         <field name="inherit_id" ref="product.product_pricelist_item_form_view"/>
         <field name="arch" type="xml">
+            <!-- Add component pricelist field after the other pricelist field -->
             <xpath expr="//group[@name='pricelist_rule_base']//field[@name='base_pricelist_id']" position="after">
                 <field name="component_pricelist_id"
                     invisible="base != 'bom_component_pricelist'"
                     readonly="base != 'bom_component_pricelist'"
                     required="compute_price == 'formula' and base == 'bom_component_pricelist'"
                     string="Component Pricelist"/>
+            </xpath>
+
+            <!-- Replace Discount label+div and Markup label+div to include bom_component_pricelist -->
+            <xpath expr="//group[@name='pricelist_rule_base']//label[@for='price_discount']" position="replace">
+                <label for="price_discount" string="Discount"
+                    invisible="base in ('standard_price', 'bom_component_pricelist')"/>
+            </xpath>
+            <xpath expr="//group[@name='pricelist_rule_base']//field[@name='price_discount']/.." position="replace">
+                <div class="o_row" invisible="base in ('standard_price', 'bom_component_pricelist')" style="width: 40% !important;">
+                    <field name="price_discount"/>
+                    <span>%</span>
+                </div>
+            </xpath>
+
+            <xpath expr="//group[@name='pricelist_rule_base']//label[@for='price_markup']" position="replace">
+                <label for="price_markup" string="Markup"
+                    invisible="base not in ('standard_price', 'bom_component_pricelist')"/>
+            </xpath>
+            <xpath expr="//group[@name='pricelist_rule_base']//field[@name='price_markup']/.." position="replace">
+                <div class="o_row" invisible="base not in ('standard_price', 'bom_component_pricelist')" style="width: 40% !important;">
+                    <field name="price_markup"/>
+                    <span>%</span>
+                </div>
             </xpath>
         </field>
     </record>

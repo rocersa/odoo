@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.tools import float_round
 
 
 class ProductPricelistItem(models.Model):
@@ -17,6 +18,49 @@ class ProductPricelistItem(models.Model):
         help="Pricelist applied to each BoM component to obtain its retail price. "
              "The kit price will be the sum of all component retail prices.",
     )
+
+    def _compute_price(self, product, quantity, uom, date, currency=None, **kwargs):
+        """Override to use markup (instead of discount) for bom_component_pricelist rules."""
+        if self.compute_price == 'formula' and self.base == 'bom_component_pricelist':
+            self and self.ensure_one()
+            product.ensure_one()
+            uom.ensure_one()
+
+            currency = currency or self.currency_id or self.env.company.currency_id
+
+            product_uom = product.uom_id
+            if product_uom != uom:
+                convert = lambda p: product_uom._compute_price(p, uom)
+            else:
+                convert = lambda p: p
+
+            base_price = self._compute_base_price(product, quantity, uom, date, currency, **kwargs)
+            price_limit = base_price
+            price = base_price + (base_price * (self.price_markup / 100))
+            if self.price_round:
+                price = float_round(price, precision_rounding=self.price_round)
+            if self.price_surcharge:
+                price += convert(self.price_surcharge)
+            if self.price_min_margin:
+                price = max(price, price_limit + convert(self.price_min_margin))
+            if self.price_max_margin:
+                price = min(price, price_limit + convert(self.price_max_margin))
+            return price
+
+        return super()._compute_price(product, quantity, uom, date, currency=currency, **kwargs)
+
+    def _get_displayed_discount(self, item):
+        if item.base == 'bom_component_pricelist':
+            return _("markup"), self._get_integer(item.price_markup)
+        return super()._get_displayed_discount(item)
+
+    def _get_price_label_base_str(self):
+        self.ensure_one()
+        if self.base == 'bom_component_pricelist':
+            if self.component_pricelist_id:
+                return _("component retail (%s)", self.component_pricelist_id.display_name)
+            return _("component retail prices")
+        return super()._get_price_label_base_str()
 
     def _compute_base_price(self, product, quantity, uom, date, currency, **kwargs):
         rule_base = self.base or 'list_price'
