@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_public_category_form_view" model="ir.ui.view">
+        <field name="name">product.public.category.form.inherit.category.images</field>
+        <field name="model">product.public.category</field>
+        <field name="inherit_id" ref="website_sale.product_public_category_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <notebook>
+                    <page string="Extra Images" name="extra_images">
+                        <field
+                            name="category_image_ids"
+                            class="o_website_sale_image_list"
+                            context="{'default_name': name}"
+                            mode="kanban"
+                            add-label="Add Media"
+                            nolabel="1"
+                            widget="x2_many_media_viewer"
+                            options="{'convert_to_webp': True}"
+                        />
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
