@@ -1,7 +1,7 @@
 {
     "name": "Website Sale Category Images",
     "summary": "Add category-level images to the product image carousel",
-    "version": "19.0.1.0.4",
+    "version": "19.0.1.1.0",
     "category": "Website",
     "author": "Rocersa",
     "license": "LGPL-3",
@@ -9,6 +9,7 @@
     "installable": True,
     "depends": [
         "website_sale",
+        "udoo_ec_multi_site",
     ],
     "data": [
         "security/ir.model.access.csv",

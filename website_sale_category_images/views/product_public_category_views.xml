@@ -11,6 +11,8 @@
                     <div class="col-md-6 col-xl-5">
                         <label for="name" string="Image Name"/>
                         <h2><field name="name" placeholder="Image Name"/></h2>
+                        <label for="website_ids" string="Websites"/>
+                        <field name="website_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Leave blank to include all" domain="[('id', 'in', parent.public_website_ids)]"/>
                     </div>
                     <div class="col-md-6 col-xl-7 text-center o_website_sale_image_modal_container">
                         <div class="row">

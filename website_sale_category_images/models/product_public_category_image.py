@@ -20,6 +20,13 @@ class ProductPublicCategoryImage(models.Model):
         index=True,
         required=True,
     )
+    website_ids = fields.Many2many(
+        string="Websites",
+        comodel_name='website',
+        relation='product_public_category_image_website_rel',
+        column1='category_image_id',
+        column2='website_id',
+    )
 
     can_image_1024_be_zoomed = fields.Boolean(
         string="Can Image 1024 be zoomed",
