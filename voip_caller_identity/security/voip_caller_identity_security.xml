@@ -7,7 +7,6 @@
     <!-- Manager group for caller identity configuration -->
     <record id="group_voip_caller_identity_manager" model="res.groups">
         <field name="name">VoIP Caller Identity Manager</field>
-        <field name="category_id" ref="base.module_category_productivity"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
