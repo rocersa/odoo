@@ -74,7 +74,7 @@
                 <filter string="Active" name="active" domain="[('active', '=', True)]"/>
                 <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
                 <separator/>
-                <group expand="0" string="Group By">
+                <group>
                     <filter string="Country" name="group_country" context="{'group_by': 'country_id'}"/>
                     <filter string="Business Unit" name="group_business_unit" context="{'group_by': 'business_unit'}"/>
                     <filter string="Company" name="group_company" context="{'group_by': 'company_id'}"/>
