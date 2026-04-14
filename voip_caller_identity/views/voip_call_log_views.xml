@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Call Log List View -->
+    <record id="voip_call_log_view_list" model="ir.ui.view">
+        <field name="name">voip.call.log.list</field>
+        <field name="model">voip.call.log</field>
+        <field name="arch" type="xml">
+            <list string="Outbound Call Logs" create="0">
+                <field name="call_timestamp"/>
+                <field name="user_id"/>
+                <field name="caller_identity_id"/>
+                <field name="resolved_phone_number"/>
+                <field name="dialed_number"/>
+                <field name="validation_result" decoration-success="validation_result == 'success'"
+                       decoration-warning="validation_result in ('fallback_default', 'fallback_system')"
+                       decoration-danger="validation_result in ('blocked', 'error')"
+                       widget="badge"/>
+                <field name="sip_header_method"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Call Log Search View -->
+    <record id="voip_call_log_view_search" model="ir.ui.view">
+        <field name="name">voip.call.log.search</field>
+        <field name="model">voip.call.log</field>
+        <field name="arch" type="xml">
+            <search string="Search Call Logs">
+                <field name="user_id"/>
+                <field name="caller_identity_id"/>
+                <field name="dialed_number"/>
+                <filter string="Today" name="today"
+                        domain="[('call_timestamp', '>=', (context_today()).strftime('%Y-%m-%d'))]"/>
+                <filter string="This Week" name="this_week"
+                        domain="[('call_timestamp', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="Success" name="success" domain="[('validation_result', '=', 'success')]"/>
+                <filter string="Fallback" name="fallback" domain="[('validation_result', 'in', ['fallback_default', 'fallback_system'])]"/>
+                <filter string="Blocked/Error" name="errors" domain="[('validation_result', 'in', ['blocked', 'error'])]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Caller Identity" name="group_identity" context="{'group_by': 'caller_identity_id'}"/>
+                    <filter string="Result" name="group_result" context="{'group_by': 'validation_result'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="voip_call_log_action" model="ir.actions.act_window">
+        <field name="name">Call Log (Caller Identity)</field>
+        <field name="res_model">voip.call.log</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="voip_call_log_view_search"/>
+        <field name="context">{'search_default_today': 1}</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_voip_call_log"
+              name="Caller ID Call Log"
+              parent="voip.menu_voip_config"
+              action="voip_call_log_action"
+              sequence="30"
+              groups="voip_caller_identity.group_voip_caller_identity_manager"/>
+</odoo>

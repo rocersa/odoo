@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend user form to add caller identity fields in VoIP/Preferences tab -->
+    <record id="res_users_view_form_voip_caller_identity" model="ir.ui.view">
+        <field name="name">res.users.form.voip.caller.identity</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']//group" position="after">
+                <group string="Outbound Caller Identity" name="voip_caller_identity">
+                    <field name="voip_caller_identity_ids" widget="many2many_tags"
+                           groups="voip_caller_identity.group_voip_caller_identity_manager"/>
+                    <field name="voip_default_caller_identity_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

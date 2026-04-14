@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="voip_caller_identity.CallerIdentityDropdown">
+        <div class="o_caller_identity_selector" t-if="hasIdentities">
+            <Dropdown>
+                <button class="btn btn-sm btn-outline-secondary o_caller_id_toggle text-truncate"
+                        title="Select outbound caller identity">
+                    <i class="fa fa-phone-square me-1"/>
+                    <span t-esc="selectedLabel"/>
+                    <i class="fa fa-caret-down ms-1"/>
+                </button>
+                <t t-set-slot="content">
+                    <t t-foreach="identities" t-as="identity" t-key="identity.id">
+                        <DropdownItem
+                            class="Object.assign({}, selectedIdentity and selectedIdentity.id === identity.id ? {'active': true} : {})"
+                            onSelected="() => this.onSelectIdentity(identity.id)">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2"
+                                      t-if="identity.country_code"
+                                      t-esc="identity.country_code"/>
+                                <span class="flex-grow-1" t-esc="identity.name"/>
+                                <small class="text-muted ms-2" t-esc="identity.phone_number"/>
+                            </div>
+                        </DropdownItem>
+                    </t>
+                </t>
+            </Dropdown>
+        </div>
+    </t>
+
+</templates>

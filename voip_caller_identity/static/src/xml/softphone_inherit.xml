@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Inject the CallerIdentityDropdown into the Odoo Phone/VoIP softphone widget.
+
+        The softphone template in Odoo Enterprise is typically named:
+        - "voip.Softphone" (Odoo 17)
+        - "voip.SoftPhone" (Odoo 18+)
+        - "phone.Softphone" (Odoo 19 after rename)
+
+        We use t-inherit to extend the softphone template and add our dropdown
+        above the dialpad/number input area.
+
+        NOTE: The exact template name and XPath target may need adjustment
+        after inspecting the actual Enterprise VoIP module templates on
+        the odoo.sh build. Check the browser dev tools for the actual
+        template names in use.
+
+        Common template structure of the softphone:
+        <div class="o_softphone">
+            <div class="o_softphone_top">  (header area)
+            <div class="o_softphone_content"> (main content)
+                <input .../> (phone number input)
+                <DialPad/> (dialpad component)
+                <button>Call</button>
+            </div>
+        </div>
+    -->
+
+    <!-- Try voip.Softphone (Odoo 17/18 name) -->
+    <t t-name="voip_caller_identity.SoftphoneExtension" t-inherit="voip.Softphone" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('o_softphone_content')]" position="before">
+            <CallerIdentityDropdown compact="true"/>
+        </xpath>
+    </t>
+
+</templates>

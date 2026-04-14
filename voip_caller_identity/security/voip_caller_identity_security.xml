@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="voip_caller_identity_group_user" model="ir.module.category">
+        <field name="name">VoIP Caller Identity</field>
+    </record>
+
+    <!-- Manager group for caller identity configuration -->
+    <record id="group_voip_caller_identity_manager" model="res.groups">
+        <field name="name">VoIP Caller Identity Manager</field>
+        <field name="category_id" ref="base.module_category_productivity"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Record rules: users see only identities assigned to them -->
+    <record id="voip_caller_identity_user_rule" model="ir.rule">
+        <field name="name">Caller Identity: User can read assigned</field>
+        <field name="model_id" ref="model_voip_caller_identity"/>
+        <field name="domain_force">[
+            '|',
+            ('user_ids', 'in', user.id),
+            ('team_ids', 'in', user.sale_team_id.id if user.sale_team_id else 0)
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Managers can read/write/create all -->
+    <record id="voip_caller_identity_manager_rule" model="ir.rule">
+        <field name="name">Caller Identity: Manager full access</field>
+        <field name="model_id" ref="model_voip_caller_identity"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_voip_caller_identity_manager'))]"/>
+    </record>
+
+    <!-- Call log: users see own logs -->
+    <record id="voip_call_log_user_rule" model="ir.rule">
+        <field name="name">Call Log: User sees own logs</field>
+        <field name="model_id" ref="model_voip_call_log"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Call log: managers see all -->
+    <record id="voip_call_log_manager_rule" model="ir.rule">
+        <field name="name">Call Log: Manager sees all</field>
+        <field name="model_id" ref="model_voip_call_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_voip_caller_identity_manager'))]"/>
+    </record>
+</odoo>

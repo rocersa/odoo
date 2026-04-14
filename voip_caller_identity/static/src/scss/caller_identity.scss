@@ -1,0 +1,48 @@
+.o_caller_identity_selector {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--o-border-color, #dee2e6);
+    background-color: var(--o-view-background-color, #fff);
+
+    .o_caller_id_toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85em;
+        padding: 4px 8px;
+
+        .fa-phone-square {
+            color: var(--o-brand-primary, #714B67);
+        }
+    }
+}
+
+// Dropdown menu styling
+.o_caller_identity_selector .dropdown-menu {
+    max-height: 200px;
+    overflow-y: auto;
+    min-width: 250px;
+
+    .dropdown-item {
+        font-size: 0.85em;
+        padding: 6px 12px;
+
+        &.active {
+            background-color: var(--o-brand-primary, #714B67);
+            color: #fff;
+
+            .badge {
+                background-color: rgba(255, 255, 255, 0.3) !important;
+            }
+
+            .text-muted {
+                color: rgba(255, 255, 255, 0.8) !important;
+            }
+        }
+
+        .badge {
+            font-size: 0.75em;
+            min-width: 24px;
+        }
+    }
+}
