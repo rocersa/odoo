@@ -1,9 +1,9 @@
 from odoo import api, fields, models
 
 
-class VoipCallLog(models.Model):
-    _name = "voip.call.log"
-    _description = "VoIP Outbound Call Log"
+class VoipCallerIdentityLog(models.Model):
+    _name = "voip.caller.identity.log"
+    _description = "VoIP Outbound Caller Identity Log"
     _order = "call_timestamp desc"
 
     user_id = fields.Many2one(
