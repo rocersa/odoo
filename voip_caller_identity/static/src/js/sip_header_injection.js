@@ -19,6 +19,22 @@ const COUNTRY_DIAL_RULES = {
 };
 
 /**
+ * Infers an ISO country code from an E.164 phone number when the identity's
+ * country_code field is not set.
+ */
+function inferCountryCodeFromPhoneNumber(phoneNumber) {
+    if (!phoneNumber || !phoneNumber.startsWith("+")) {
+        return null;
+    }
+    for (const [country, rules] of Object.entries(COUNTRY_DIAL_RULES)) {
+        if (phoneNumber.startsWith("+" + rules.callingCode)) {
+            return country;
+        }
+    }
+    return null;
+}
+
+/**
  * Normalizes a dialed phone number to E.164 using the selected caller identity's
  * country to determine the calling code. If the number already starts with "+"
  * or no identity/country is available, it is returned unchanged.
@@ -39,7 +55,15 @@ function normalizePhoneNumber(phoneNumber, identity) {
     if (phoneNumber.startsWith("00")) {
         return "+" + phoneNumber.slice(2);
     }
-    const countryCode = identity?.country_code;
+    let countryCode = identity?.country_code;
+    let inferred = false;
+    if (!countryCode && identity?.phone_number) {
+        const inferredCode = inferCountryCodeFromPhoneNumber(identity.phone_number);
+        if (inferredCode) {
+            countryCode = inferredCode;
+            inferred = true;
+        }
+    }
     if (!countryCode) {
         return phoneNumber;
     }
@@ -73,13 +97,19 @@ patch(UserAgent.prototype, {
                 const normalizedNumber = normalizePhoneNumber(data.phone_number, identity);
                 if (normalizedNumber !== originalNumber) {
                     normalized = true;
-                    normalizationNote = `Normalized from ${originalNumber} using identity country ${identity?.country_code || "none"}`;
+                    if (!identity?.country_code && identity?.phone_number) {
+                        normalizationNote = `Normalized from ${originalNumber} using country inferred from identity number ${identity.phone_number}`;
+                    } else {
+                        normalizationNote = `Normalized from ${originalNumber} using identity country ${identity?.country_code || "none"}`;
+                    }
                     console.log(`[CallerIdentity] Normalized ${originalNumber} → ${normalizedNumber}`);
                 } else {
                     if (!identity) {
                         normalizationNote = "Skipped: no caller identity selected";
-                    } else if (!identity.country_code) {
-                        normalizationNote = `Skipped: identity ${identity.name} has no country code`;
+                    } else if (!identity.country_code && !identity.phone_number) {
+                        normalizationNote = `Skipped: identity ${identity.name} has no country code or phone number to infer from`;
+                    } else if (!identity.country_code && identity.phone_number) {
+                        normalizationNote = `Skipped: could not infer country from identity number ${identity.phone_number}`;
                     } else if (originalNumber.startsWith("+")) {
                         normalizationNote = "Skipped: number already in international format";
                     } else if (!COUNTRY_DIAL_RULES[identity.country_code]) {
