@@ -182,7 +182,7 @@ export const callerIdentityService = {
         async function logCall(dialedNumber, validationResult) {
             const identity = getSelectedIdentity();
             try {
-                await orm.call("voip.call.log", "log_call", [
+                await orm.call("voip.caller.identity.log", "log_call", [
                     {
                         caller_identity_id: identity ? identity.id : false,
                         resolved_phone_number: identity ? identity.phone_number : false,
