@@ -2,11 +2,12 @@
 
 import { registry } from "@web/core/registry";
 import { reactive } from "@odoo/owl";
+import { user } from "@web/core/user";
 
 export const callerIdentityService = {
-    dependencies: ["orm", "user", "notification"],
+    dependencies: ["orm", "notification"],
 
-    start(env, { orm, user, notification }) {
+    start(env, { orm, notification }) {
         const state = reactive({
             identities: [],
             selectedIdentityId: null,
