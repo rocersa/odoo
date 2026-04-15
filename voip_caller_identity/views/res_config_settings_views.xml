@@ -3,62 +3,28 @@
     <record id="res_config_settings_view_form_voip_caller_identity" model="ir.ui.view">
         <field name="name">res.config.settings.form.voip.caller.identity</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="voip.res_config_settings_view_form"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('app_settings_block')]" position="inside">
-                <h2>Outbound Caller Identity</h2>
-                <div class="row mt16 o_settings_container">
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="voip_sip_header_name"/>
-                            <div class="text-muted">
-                                Custom SIP header name sent to FreePBX with the caller identity
-                            </div>
+            <xpath expr="//form" position="inside">
+                <app notApp="1" string="Phone" data-string="Phone" name="voip" groups="base.group_system">
+                    <block title="Outbound Caller Identity" name="voip_caller_identity_settings">
+                        <setting help="Custom SIP header name sent to FreePBX with the caller identity">
                             <field name="voip_sip_header_name"/>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="voip_sip_header_format"/>
-                            <div class="text-muted">
-                                Format of the value included in the SIP header
-                            </div>
+                        </setting>
+                        <setting help="Format of the value included in the SIP header">
                             <field name="voip_sip_header_format"/>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="voip_identity_fallback"/>
-                            <div class="text-muted">
-                                What happens when the user has not selected a caller identity
-                            </div>
+                        </setting>
+                        <setting help="What happens when the user has not selected a caller identity">
                             <field name="voip_identity_fallback"/>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="voip_invalid_identity_action"/>
-                            <div class="text-muted">
-                                What happens when the selected identity is invalid or not allowed
-                            </div>
+                        </setting>
+                        <setting help="What happens when the selected identity is invalid or not allowed">
                             <field name="voip_invalid_identity_action"/>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                            <label for="voip_system_default_identity_id"/>
-                            <div class="text-muted">
-                                System-wide fallback identity when no user or team default is set
-                            </div>
+                        </setting>
+                        <setting help="System-wide fallback identity when no user or team default is set">
                             <field name="voip_system_default_identity_id"/>
-                        </div>
-                    </div>
-                </div>
+                        </setting>
+                    </block>
+                </app>
             </xpath>
         </field>
     </record>
