@@ -107,5 +107,5 @@
               parent="voip.menu_voip_call_configuration"
               action="voip_caller_identity_action"
               sequence="20"
-              groups="group_voip_caller_identity_manager"/>
+              groups="base.group_system"/>
 </odoo>

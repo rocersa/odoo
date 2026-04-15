@@ -57,5 +57,5 @@
               parent="voip.menu_voip_call_configuration"
               action="voip_call_log_action"
               sequence="30"
-              groups="voip_caller_identity.group_voip_caller_identity_manager"/>
+              groups="base.group_system"/>
 </odoo>
