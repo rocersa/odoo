@@ -9,8 +9,11 @@
                 <field name="call_timestamp"/>
                 <field name="user_id"/>
                 <field name="caller_identity_id"/>
+                <field name="original_dialed_number"/>
                 <field name="resolved_phone_number"/>
                 <field name="dialed_number"/>
+                <field name="normalized"/>
+                <field name="normalization_note"/>
                 <field name="validation_result" widget="badge"/>
                 <field name="sip_header_method"/>
             </list>

@@ -20,7 +20,10 @@ class VoipCallerIdentityLog(models.Model):
         string="Resolved Caller ID",
         help="The final phone number sent as caller ID",
     )
+    original_dialed_number = fields.Char(string="Original Dialed Number")
     dialed_number = fields.Char(string="Dialed Number")
+    normalized = fields.Boolean(string="Number Normalized")
+    normalization_note = fields.Char(string="Normalization Note")
     call_timestamp = fields.Datetime(
         string="Call Time",
         default=fields.Datetime.now,

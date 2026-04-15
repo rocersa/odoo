@@ -64,17 +64,45 @@ patch(UserAgent.prototype, {
                 return;
             }
             // Normalize the dialed number based on the selected caller identity's country
+            let originalNumber = null;
+            let normalized = false;
+            let normalizationNote = null;
             if (data?.phone_number) {
                 const identity = callerIdentityService.getSelectedIdentity();
-                const original = data.phone_number;
-                data.phone_number = normalizePhoneNumber(data.phone_number, identity);
-                if (data.phone_number !== original) {
-                    console.log(`[CallerIdentity] Normalized ${original} → ${data.phone_number}`);
+                originalNumber = data.phone_number;
+                const normalizedNumber = normalizePhoneNumber(data.phone_number, identity);
+                if (normalizedNumber !== originalNumber) {
+                    normalized = true;
+                    normalizationNote = `Normalized from ${originalNumber} using identity country ${identity?.country_code || "none"}`;
+                    console.log(`[CallerIdentity] Normalized ${originalNumber} → ${normalizedNumber}`);
+                } else {
+                    if (!identity) {
+                        normalizationNote = "Skipped: no caller identity selected";
+                    } else if (!identity.country_code) {
+                        normalizationNote = `Skipped: identity ${identity.name} has no country code`;
+                    } else if (originalNumber.startsWith("+")) {
+                        normalizationNote = "Skipped: number already in international format";
+                    } else if (!COUNTRY_DIAL_RULES[identity.country_code]) {
+                        normalizationNote = `Skipped: unknown country code ${identity.country_code}`;
+                    } else {
+                        normalizationNote = "Skipped: unexpected normalization result";
+                    }
+                    console.warn(`[CallerIdentity] Number not normalized: ${originalNumber}. ${normalizationNote}`);
+                }
+                data.phone_number = normalizedNumber;
+                if (!data.phone_number.startsWith("+")) {
+                    console.warn(`[CallerIdentity] Dialed number lacks country code: ${data.phone_number}`);
                 }
             }
             this._pendingCallerIdentityHeaders = callerIdentityService.buildSipHeaders();
             const dialedNumber = data?.phone_number || "unknown";
-            await callerIdentityService.logCall(dialedNumber, validation.reason);
+            await callerIdentityService.logCall(
+                dialedNumber,
+                validation.reason,
+                originalNumber,
+                normalized,
+                normalizationNote
+            );
         }
         return super.makeCall(data, options);
     },

@@ -179,14 +179,17 @@ export const callerIdentityService = {
             return { allowed: true, reason: "fallback_no_default", identity: null };
         }
 
-        async function logCall(dialedNumber, validationResult) {
+        async function logCall(dialedNumber, validationResult, originalNumber = null, normalized = false, normalizationNote = null) {
             const identity = getSelectedIdentity();
             try {
                 await orm.call("voip.caller.identity.log", "log_call", [
                     {
                         caller_identity_id: identity ? identity.id : false,
                         resolved_phone_number: identity ? identity.phone_number : false,
+                        original_dialed_number: originalNumber || false,
                         dialed_number: dialedNumber,
+                        normalized: normalized,
+                        normalization_note: normalizationNote || false,
                         validation_result: validationResult,
                         sip_header_method: state.sipHeaderName,
                     },
