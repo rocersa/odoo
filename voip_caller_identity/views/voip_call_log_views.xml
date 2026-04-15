@@ -54,7 +54,7 @@
     <!-- Menu -->
     <menuitem id="menu_voip_call_log"
               name="Caller ID Call Log"
-              parent="menu_voip_caller_identity_config_parent"
+              parent="voip.menu_voip_call_configuration"
               action="voip_call_log_action"
               sequence="30"
               groups="voip_caller_identity.group_voip_caller_identity_manager"/>

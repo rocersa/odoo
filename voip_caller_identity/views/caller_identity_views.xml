@@ -101,21 +101,10 @@
         </field>
     </record>
 
-    <!-- Menu: place under Phone app's Configuration menu.
-         Look up the correct XML ID on the running instance via
-         Settings > Technical > Menu Items, search "Phone" or "Configuration",
-         then View Metadata to get the XML ID.
-         For now, create a standalone menu to unblock installation. -->
-    <menuitem id="menu_voip_caller_identity_root"
-              name="Phone"
-              sequence="80"/>
-    <menuitem id="menu_voip_caller_identity_config_parent"
-              name="Configuration"
-              parent="menu_voip_caller_identity_root"
-              sequence="50"/>
+    <!-- Menu: placed under the existing Phone app's Configuration menu -->
     <menuitem id="menu_voip_caller_identity_config"
               name="Caller Identities"
-              parent="menu_voip_caller_identity_config_parent"
+              parent="voip.menu_voip_call_configuration"
               action="voip_caller_identity_action"
               sequence="20"
               groups="group_voip_caller_identity_manager"/>

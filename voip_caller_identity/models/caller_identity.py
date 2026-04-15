@@ -62,12 +62,10 @@ class VoipCallerIdentity(models.Model):
                     "(e.g. +61291234567)."
                 )
 
-    def name_get(self):
-        result = []
+    @api.depends("name", "phone_number")
+    def _compute_display_name(self):
         for rec in self:
-            label = f"{rec.name} ({rec.phone_number})"
-            result.append((rec.id, label))
-        return result
+            rec.display_name = f"{rec.name} ({rec.phone_number})"
 
     @api.model
     def get_allowed_identities(self):
