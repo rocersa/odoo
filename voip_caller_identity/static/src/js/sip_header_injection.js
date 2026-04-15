@@ -8,14 +8,17 @@ import { _t } from "@web/core/l10n/translation";
 
 patch(UserAgent.prototype, {
     async makeCall(data, options = {}) {
+        console.log("[CallerIdentity] makeCall invoked", data, options);
         const callerIdentityService = this.env.services.voip_caller_identity;
         if (callerIdentityService) {
             const validation = await callerIdentityService.validateAndResolve();
+            console.log("[CallerIdentity] validation result:", validation);
             if (!validation.allowed) {
                 console.warn("[CallerIdentity] Call blocked:", validation.reason);
                 return;
             }
             this._pendingCallerIdentityHeaders = callerIdentityService.buildSipHeaders();
+            console.log("[CallerIdentity] built headers:", this._pendingCallerIdentityHeaders);
             const dialedNumber = data?.phone_number || "unknown";
             await callerIdentityService.logCall(dialedNumber, validation.reason);
         }
@@ -24,6 +27,7 @@ patch(UserAgent.prototype, {
 
     invite(call) {
         const extraHeaders = this._pendingCallerIdentityHeaders || [];
+        console.log("[CallerIdentity] invite() extraHeaders:", extraHeaders);
         delete this._pendingCallerIdentityHeaders;
         if (this.voip.mode === "demo") {
             const session = new Session(call);
@@ -59,6 +63,7 @@ patch(UserAgent.prototype, {
         if (extraHeaders.length > 0) {
             inviteOptions.requestOptions = { extraHeaders };
         }
+        console.log("[CallerIdentity] inviter.invite options:", JSON.parse(JSON.stringify(inviteOptions)));
         inviter
             .invite(inviteOptions)
             .catch((error) => {

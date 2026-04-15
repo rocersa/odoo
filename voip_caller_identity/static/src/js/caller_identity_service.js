@@ -43,12 +43,6 @@ export const callerIdentityService = {
                 }
 
                 // Load SIP configuration
-                const configKeys = [
-                    "voip_caller_identity.sip_header_name",
-                    "voip_caller_identity.sip_header_format",
-                    "voip_caller_identity.fallback_behaviour",
-                    "voip_caller_identity.invalid_identity_action",
-                ];
                 const params = await orm.call(
                     "ir.config_parameter",
                     "get_param",
@@ -83,6 +77,7 @@ export const callerIdentityService = {
                 }
 
                 state.loaded = true;
+                console.log("[CallerIdentity] loaded identities:", identities, "default:", state.defaultIdentityId, "selected:", state.selectedIdentityId);
             } catch (e) {
                 console.error("Failed to load caller identities:", e);
                 state.loaded = true;
@@ -90,6 +85,7 @@ export const callerIdentityService = {
         }
 
         function selectIdentity(identityId) {
+            console.log("[CallerIdentity] selectIdentity:", identityId);
             state.selectedIdentityId = identityId;
         }
 
@@ -102,6 +98,7 @@ export const callerIdentityService = {
 
         function buildSipHeaders() {
             const identity = getSelectedIdentity();
+            console.log("[CallerIdentity] buildSipHeaders selected:", identity);
             if (!identity) {
                 return [];
             }
@@ -118,11 +115,14 @@ export const callerIdentityService = {
                     headerValue = identity.phone_number;
                     break;
             }
-            return [`${state.sipHeaderName}: ${headerValue}`];
+            const header = `${state.sipHeaderName}: ${headerValue}`;
+            console.log("[CallerIdentity] built SIP header:", header);
+            return [header];
         }
 
         async function validateAndResolve() {
             const identity = getSelectedIdentity();
+            console.log("[CallerIdentity] validateAndResolve identity:", identity);
             if (!identity) {
                 if (state.fallbackBehaviour === "block") {
                     notification.add(
