@@ -33,7 +33,7 @@
                 <filter string="Fallback" name="fallback" domain="[('validation_result', 'in', ['fallback_default', 'fallback_system'])]"/>
                 <filter string="Blocked/Error" name="errors" domain="[('validation_result', 'in', ['blocked', 'error'])]"/>
                 <separator/>
-                <group expand="0" string="Group By">
+                <group>
                     <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
                     <filter string="Caller Identity" name="group_identity" context="{'group_by': 'caller_identity_id'}"/>
                     <filter string="Result" name="group_result" context="{'group_by': 'validation_result'}"/>
