@@ -1,5 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_voip_caller_identity_user,voip.caller.identity.user,model_voip_caller_identity,base.group_user,1,0,0,0
 access_voip_caller_identity_manager,voip.caller.identity.manager,model_voip_caller_identity,group_voip_caller_identity_manager,1,1,1,1
+access_voip_caller_identity_system,voip.caller.identity.system,model_voip_caller_identity,base.group_system,1,1,1,1
 access_voip_caller_identity_log_user,voip.caller.identity.log.user,model_voip_caller_identity_log,base.group_user,1,0,1,0
 access_voip_caller_identity_log_manager,voip.caller.identity.log.manager,model_voip_caller_identity_log,group_voip_caller_identity_manager,1,1,1,1
+access_voip_caller_identity_log_system,voip.caller.identity.log.system,model_voip_caller_identity_log,base.group_system,1,1,1,1

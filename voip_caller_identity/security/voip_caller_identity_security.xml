@@ -49,4 +49,20 @@
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('group_voip_caller_identity_manager'))]"/>
     </record>
+
+    <!-- System admins: full access on caller identities -->
+    <record id="voip_caller_identity_system_rule" model="ir.rule">
+        <field name="name">Caller Identity: System admin full access</field>
+        <field name="model_id" ref="model_voip_caller_identity"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+
+    <!-- System admins: see all call logs -->
+    <record id="voip_call_log_system_rule" model="ir.rule">
+        <field name="name">Call Log: System admin sees all</field>
+        <field name="model_id" ref="model_voip_caller_identity_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
 </odoo>
