@@ -17,7 +17,7 @@
     """,
     "author": "Harry",
     "category": "Productivity/Phone",
-    "version": "19.0.1.0.13",
+    "version": "19.0.1.0.14",
     "depends": ["voip", "crm"],
     "data": [
         "security/voip_caller_identity_security.xml",

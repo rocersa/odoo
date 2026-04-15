@@ -48,7 +48,7 @@
         <field name="name">voip.caller.identity.list</field>
         <field name="model">voip.caller.identity</field>
         <field name="arch" type="xml">
-            <list string="Caller Identities">
+            <list string="Caller Identities" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="phone_number"/>
