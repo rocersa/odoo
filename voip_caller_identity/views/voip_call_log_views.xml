@@ -32,7 +32,7 @@
                 <filter string="Today" name="today"
                         domain="[('call_timestamp', '>=', (context_today()).strftime('%Y-%m-%d'))]"/>
                 <filter string="This Week" name="this_week"
-                        domain="[('call_timestamp', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                        domain="[('call_timestamp', '>=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Success" name="success" domain="[('validation_result', '=', 'success')]"/>
                 <filter string="Fallback" name="fallback" domain="[('validation_result', 'in', ['fallback_default', 'fallback_system'])]"/>
@@ -59,7 +59,7 @@
     <!-- Menu -->
     <menuitem id="menu_voip_call_log"
               name="Caller ID Call Log"
-              parent="voip.menu_voip_config"
+              parent="menu_voip_caller_identity_config_parent"
               action="voip_call_log_action"
               sequence="30"
               groups="voip_caller_identity.group_voip_caller_identity_manager"/>
