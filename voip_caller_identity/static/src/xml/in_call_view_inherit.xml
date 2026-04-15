@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Pass caller_id_name down to ContactInfo during an active call
+        so the prepended DID label (e.g. "NZ Corten:") remains visible.
+    -->
+
+    <t t-name="voip_caller_identity.InCallViewInherit" t-inherit="voip.InCallView-default" t-inherit-mode="extension" owl="1">
+        <xpath expr="//ContactInfo[@contact='props.call?.partner_id']" position="attributes">
+            <attribute name="callerIdName">props.call?.caller_id_name</attribute>
+        </xpath>
+    </t>
+
+</templates>

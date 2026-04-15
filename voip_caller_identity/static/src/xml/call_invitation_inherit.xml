@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Pass caller_id_name down to ContactInfo on the incoming call screen
+        so the prepended DID label (e.g. "NZ Corten:") is shown.
+    -->
+
+    <t t-name="voip_caller_identity.CallInvitationInherit" t-inherit="voip.CallInvitation" t-inherit-mode="extension" owl="1">
+        <xpath expr="//ContactInfo[@contact='props.call?.partner_id']" position="attributes">
+            <attribute name="callerIdName">props.call?.caller_id_name</attribute>
+        </xpath>
+    </t>
+
+</templates>
