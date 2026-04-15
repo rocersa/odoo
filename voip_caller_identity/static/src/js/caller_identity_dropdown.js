@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
@@ -14,11 +14,6 @@ export class CallerIdentityDropdown extends Component {
 
     setup() {
         this.callerIdentityService = useService("voip_caller_identity");
-        this.state = useState({
-            get identities() {
-                return this.callerIdentityService?.state?.identities || [];
-            }.bind(this),
-        });
     }
 
     get identities() {
