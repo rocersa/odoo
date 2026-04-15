@@ -14,6 +14,9 @@ patch(ContactInfo.prototype, {
     get contactName() {
         const baseName = this.contact?.voipName || this.props.phoneNumber;
         if (this.props.callerIdName) {
+            if (baseName && this.props.callerIdName.endsWith(baseName)) {
+                return this.props.callerIdName;
+            }
             return `${this.props.callerIdName} ${baseName}`;
         }
         return baseName;
