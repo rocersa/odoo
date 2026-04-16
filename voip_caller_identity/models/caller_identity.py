@@ -74,7 +74,11 @@ class VoipCallerIdentity(models.Model):
         domain = [
             ("active", "=", True),
             "|",
+            "|",
+            ("user_ids", "=", False),
             ("user_ids", "in", user.id),
+            "|",
+            ("team_ids", "=", False),
             ("team_ids", "in", user.sale_team_id.id if user.sale_team_id else 0),
         ]
         if user.company_id:

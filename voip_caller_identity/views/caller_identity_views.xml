@@ -22,17 +22,17 @@
                             <field name="business_unit"/>
                         </group>
                         <group>
-                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="company_id" groups="base.group_multi_company" placeholder="Leave empty to allow all companies"/>
                             <field name="active" invisible="1"/>
                             <field name="sequence"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Allowed Users" name="users">
-                            <field name="user_ids" widget="many2many_tags"/>
+                            <field name="user_ids" widget="many2many_tags" placeholder="Leave empty to allow all users"/>
                         </page>
                         <page string="Allowed Teams" name="teams">
-                            <field name="team_ids" widget="many2many_tags"/>
+                            <field name="team_ids" widget="many2many_tags" placeholder="Leave empty to allow all teams"/>
                         </page>
                         <page string="Notes" name="notes">
                             <field name="note" placeholder="Internal notes about this identity..."/>
