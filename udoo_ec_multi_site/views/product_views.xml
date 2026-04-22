@@ -55,4 +55,12 @@
             </field>
         </field>
     </record>
+
+    <template id="categories_recursive_multi_website"
+              inherit_id="website_sale.categories_recursive"
+              name="Multi-Website Category Children Filter">
+        <xpath expr="//t[@t-set='children'][2]" position="after">
+            <t t-set="children" t-value="children.filtered(lambda c: not (c.public_website_ids | c.website_id) or request.env['website'].get_current_website() in (c.public_website_ids | c.website_id))"/>
+        </xpath>
+    </template>
 </odoo>

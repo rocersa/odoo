@@ -17,11 +17,17 @@ class MultiWebsiteSale(WebsiteSale):
         """
         vals = super()._get_additional_shop_values(values, **kwargs)
         website = request.env['website'].get_current_website()
-        vals.update(
-            {
-                'categories': values['categories'].filtered(
-                    lambda o: not o.public_website_ids or website in o.public_website_ids
-                )
-            }
-        )
+
+        def is_visible(cat):
+            restricts = cat.public_website_ids | cat.website_id
+            return not restricts or website in restricts
+
+        if 'categories' in values:
+            vals['categories'] = values['categories'].filtered(is_visible)
+        if 'category_entries' in values:
+            vals['category_entries'] = values['category_entries'].filtered(is_visible)
+        if 'search_categories_ids' in values:
+            all_cats = request.env['product.public.category'].browse(values['search_categories_ids'])
+            vals['search_categories_ids'] = all_cats.filtered(is_visible).ids
+
         return vals
