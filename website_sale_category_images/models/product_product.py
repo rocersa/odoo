@@ -26,4 +26,6 @@ class ProductProduct(models.Model):
                     lambda img: not img.website_ids or current_website in img.website_ids
                 )
             images += list(cat_images)
+        if images and images[0] == self and not self.image_1920 and len(images) > 1:
+            images = images[1:]
         return images
