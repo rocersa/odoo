@@ -9,6 +9,12 @@ class ProductPricelistItem(models.Model):
         store=True,
     )
 
+    custom_name = fields.Char(
+        string="Rule Name",
+        help="Optional label for this pricelist rule. "
+             "Overrides the auto-generated 'Applied On' name.",
+    )
+
     attribute_filter_ids = fields.One2many(
         comodel_name='pricelist.item.attribute.filter',
         inverse_name='pricelist_item_id',
@@ -24,22 +30,12 @@ class ProductPricelistItem(models.Model):
         for item in self:
             item.has_attribute_filter = bool(item.attribute_filter_ids)
 
-    @api.depends('applied_on', 'categ_id', 'product_tmpl_id', 'product_id', 'attribute_filter_ids')
+    @api.depends('applied_on', 'categ_id', 'product_tmpl_id', 'product_id',
+                 'attribute_filter_ids', 'custom_name')
     def _compute_name(self):
         for item in self:
-            if (
-                item.applied_on == '1_product'
-                and item.product_tmpl_id
-                and item.attribute_filter_ids
-            ):
-                filters = []
-                for f in item.attribute_filter_ids:
-                    vals = ', '.join(f.value_ids.mapped('name'))
-                    filters.append(f"{f.attribute_id.name}: {vals}")
-                item.name = _("%(product)s (%(filters)s)",
-                    product=item.product_tmpl_id.display_name,
-                    filters='; '.join(filters),
-                )
+            if item.custom_name:
+                item.name = item.custom_name
             else:
                 super(ProductPricelistItem, item)._compute_name()
 

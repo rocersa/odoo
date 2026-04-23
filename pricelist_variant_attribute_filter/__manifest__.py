@@ -1,7 +1,7 @@
 {
     "name": "Pricelist Variant Attribute Filter",
     "summary": "Filter pricelist rules by variant attribute values instead of individual variants.",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Sales/Sales",
     "author": "Rocersa",
     "license": "AGPL-3",
