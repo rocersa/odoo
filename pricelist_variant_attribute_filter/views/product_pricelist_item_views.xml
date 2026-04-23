@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="product_pricelist_item_form_view" model="ir.ui.view">
+        <field name="name">product.pricelist.item.form.inherit.attr.filter</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="inherit_id" ref="product.product_pricelist_item_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Hide the single-variant selector; replaced by attribute filters -->
+            <field name="product_id" position="replace">
+                <field name="product_id"
+                    options="{'no_create': 1}"
+                    invisible="1"/>
+            </field>
+
+            <!-- Add attribute filter lines after the product template field -->
+            <field name="product_tmpl_id" position="after">
+                <field name="attribute_filter_ids"
+                    invisible="display_applied_on != '1_product' or not product_tmpl_id or product_variant_count &lt; 2"
+                    context="{'default_product_tmpl_id': product_tmpl_id}">
+                    <list editable="bottom">
+                        <field name="pricelist_item_id" column_invisible="True"/>
+                        <field name="product_tmpl_id" column_invisible="True"/>
+                        <field name="available_value_ids" column_invisible="True"/>
+                        <field name="attribute_id"
+                            string="Attribute"
+                            domain="[('product_tmpl_ids', 'in', parent.product_tmpl_id)]"
+                            options="{'no_create': 1, 'no_open': 1}"/>
+                        <field name="value_ids"
+                            string="Values"
+                            widget="many2many_tags"
+                            domain="[('id', 'in', available_value_ids)]"
+                            options="{'no_create': 1}"/>
+                    </list>
+                </field>
+            </field>
+        </field>
+    </record>
+</odoo>

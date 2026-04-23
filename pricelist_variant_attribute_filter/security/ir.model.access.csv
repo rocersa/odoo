@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pricelist_item_attribute_filter_user,pricelist.item.attribute.filter.user,model_pricelist_item_attribute_filter,product.group_product_pricelist,1,1,1,1
