@@ -19,12 +19,12 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <field name="website_id" position="attributes">
+            <xpath expr="//group[@name='extra_info']//field[@name='website_id']" position="attributes">
                 <attribute name="invisible">not website_id</attribute>
-            </field>
-            <field name="website_id" position="after">
+            </xpath>
+            <xpath expr="//group[@name='extra_info']//field[@name='product_tag_ids']" position="before">
                 <field name="public_website_ids" options="{'no_create': True}" widget="many2many_tags" placeholder="Leave blank to include all" groups="website.group_multi_website"/>
-            </field>
+            </xpath>
         </field>
     </record>
 
