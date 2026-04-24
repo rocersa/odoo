@@ -6,6 +6,8 @@ These are custom Odoo 19.0 modules developed and deployed via **odoo.sh**.
 
 The `odoo/` directory contains the Odoo Community source code and must not be modified. The Odoo Enterprise source modules have also been extracted into `odoo/addons/` and are available for reference, but must not be modified.
 
+The `odoo_19.0+e.*.tar.gz` archive in the repository root is the upstream source distribution. Do not use it to inspect Community code; rely on the `odoo/` symlink or your knowledge of the framework. Only extract from the tar file when you need to inspect Enterprise addons that are not available through the symlink.
+
 ## Branching
 
 All changes must be implemented on `feature/` or `fix/` branches. Never commit directly to `production`.

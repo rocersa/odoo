@@ -63,4 +63,33 @@
             <t t-set="children" t-value="children.filtered(lambda c: not (c.public_website_ids | c.website_id) or request.env['website'].get_current_website() in (c.public_website_ids | c.website_id))"/>
         </xpath>
     </template>
+
+    <record id="product_normal_form_view_inherit_multi_website" model="ir.ui.view">
+        <field name="name">product.product.form.multi.website.inherit</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <field name="website_id" position="after">
+                <field name="public_website_ids"
+                       widget="many2many_tags"
+                       options="{'no_create': True}"
+                       placeholder="Leave blank to inherit from template"
+                       groups="website.group_multi_website"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="product_product_tree_view_inherit_multi_website" model="ir.ui.view">
+        <field name="name">product.product.tree.multi.website.inherit</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="website_id" position="after">
+                <field name="public_website_ids"
+                       widget="many2many_tags"
+                       optional="hide"
+                       groups="website.group_multi_website"/>
+            </field>
+        </field>
+    </record>
 </odoo>
