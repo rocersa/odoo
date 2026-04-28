@@ -7,4 +7,12 @@
         </field>
     </record>
 
+    <record id="product_product_comp_rule" model="ir.rule">
+        <field name="name">Product multi-company</field>
+        <field name="model_id" ref="product.model_product_product"/>
+        <field name="domain_force">
+            ['|', '|', ('company_ids', '=', False), ('company_ids', 'in', company_ids), '&', ('company_ids', '=', False), '|', ('product_tmpl_id.company_ids', '=', False), ('product_tmpl_id.company_ids', 'in', company_ids)]
+        </field>
+    </record>
+
 </odoo>

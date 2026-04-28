@@ -33,11 +33,11 @@
         </field>
     </record>
 
-    <!-- Product Product Form View -->
-    <record id="view_product_variant_easy_edit_view_multicompany" model="ir.ui.view">
-        <field name="name">product.variant.easy.edit.multicompany</field>
+    <!-- Product Product Normal Form View -->
+    <record id="product_normal_form_view_inherit_multicompany" model="ir.ui.view">
+        <field name="name">product.product.form.multicompany.inherit</field>
         <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
             <field name="company_id" position="attributes">
                 <attribute name="readonly">1</attribute>
@@ -46,6 +46,21 @@
             <field name="company_id" position="after">
                 <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
             </field>
+        </field>
+    </record>
+
+    <!-- Product Product Easy Edit Form View -->
+    <record id="product_variant_easy_edit_view_inherit_multicompany" model="ir.ui.view">
+        <field name="name">product.product.easy.edit.multicompany.inherit</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='sales']/field[@name='additional_product_tag_ids']" position="after">
+                <field name="company_ids"
+                       widget="many2many_tags"
+                       placeholder="Leave blank to inherit from template"
+                       groups="base.group_multi_company"/>
+            </xpath>
         </field>
     </record>
 

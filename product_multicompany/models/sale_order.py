@@ -10,8 +10,8 @@ class SaleOrder(models.Model):
     def _check_order_line_company_id(self):
         for order in self:
             bad_lines = order.order_line.filtered(
-                lambda l: l.product_id.company_ids
-                and order.company_id not in l.product_id.company_ids
+                lambda l: l.product_id._get_effective_company_ids()
+                and order.company_id not in l.product_id._get_effective_company_ids()
             )
             if bad_lines:
                 bad_products = bad_lines.product_id.mapped('display_name')
