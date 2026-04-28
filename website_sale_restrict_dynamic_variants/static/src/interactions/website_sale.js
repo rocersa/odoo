@@ -10,6 +10,9 @@ patch(WebsiteSale.prototype, {
      * For select / radio the candidate *replaces* the currently-selected value
      * on its own attribute line so the user can see which other values are
      * available without the old value blocking every option.
+     *
+     * Greyed-out inputs and options are also made unclickable by setting the
+     * `disabled` attribute.
      */
     _checkExclusions(parent, combination) {
         super._checkExclusions(parent, combination);
@@ -42,9 +45,16 @@ patch(WebsiteSale.prototype, {
             'input.js_variant_change, select.css_attribute_select option'
         );
 
+        // Re-enable everything first so we don't leave stale disabled states
+        // from a previous combination.
+        allInputs.forEach((el) => {
+            el.disabled = false;
+        });
+
         allInputs.forEach((el) => {
             // Skip elements already excluded by standard rules
             if (el.classList.contains('css_not_available') || el.closest('.css_not_available')) {
+                el.disabled = true;
                 return;
             }
 
@@ -85,6 +95,7 @@ patch(WebsiteSale.prototype, {
             if (!isAvailable) {
                 // Grey out without a tooltip (excludedBy / attributeNames are null)
                 this._disableInput(parent, ptavId, null, null);
+                el.disabled = true;
             }
         });
     },
