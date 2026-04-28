@@ -6,6 +6,16 @@ from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 class WebsiteSaleRestrictDynamicVariants(WebsiteSale):
 
+    def _prepare_product_values(self, product, category, **kwargs):
+        """Pass visible ptav ids to the template so unavailable options can be hidden."""
+        vals = super()._prepare_product_values(product, category, **kwargs)
+        if product.restrict_dynamic_variants:
+            visible_ptavs = set()
+            for variant in product._get_visible_variants():
+                visible_ptavs.update(variant.product_template_attribute_value_ids.ids)
+            vals['visible_ptav_ids'] = list(visible_ptavs)
+        return vals
+
     @http.route(
         ['/shop/product/media/update'],
         type='jsonrpc',

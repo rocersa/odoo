@@ -11,4 +11,20 @@
             </group>
         </field>
     </record>
+
+    <!-- Filter variant options on the product page so values that don't appear
+         in any visible variant are hidden rather than greyed out. -->
+    <record id="variants_hide_invisible" model="ir.ui.view">
+        <field name="name">website.sale.variants.hide.invisible</field>
+        <field name="inherit_id" ref="website_sale.variants"/>
+        <field name="arch" type="xml">
+            <xpath expr="//t[@t-set='ptavs']" position="attributes">
+                <attribute name="t-value">
+                    ptal.product_template_value_ids._only_active().filtered(
+                        lambda ptav: not product.restrict_dynamic_variants or ptav.id in (visible_ptav_ids or [])
+                    )
+                </attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>
