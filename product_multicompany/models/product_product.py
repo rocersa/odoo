@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
+from odoo.fields import Domain
 
 
 class ProductProduct(models.Model):
@@ -27,9 +28,15 @@ class ProductProduct(models.Model):
 
     @api.model
     def _check_company_domain(self, companies):
-        return [
+        if not companies:
+            return Domain('company_ids', '=', False)
+        if isinstance(companies, str):
+            company_ids = companies
+        else:
+            company_ids = models.to_record_ids(companies)
+        return Domain([
             '|',
-            '|', ('company_ids', '=', False), ('company_ids', 'in', companies.ids),
+            '|', ('company_ids', '=', False), ('company_ids', 'in', company_ids),
             '&', ('company_ids', '=', False),
-                 '|', ('product_tmpl_id.company_ids', '=', False), ('product_tmpl_id.company_ids', 'in', companies.ids)
-        ]
+                 '|', ('product_tmpl_id.company_ids', '=', False), ('product_tmpl_id.company_ids', 'in', company_ids)
+        ])
