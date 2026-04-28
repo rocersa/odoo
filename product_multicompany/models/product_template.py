@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
+from odoo.fields import Domain
+from odoo.tools.misc import unquote
 
 
 class ProductTemplate(models.Model):
@@ -38,4 +40,8 @@ class ProductTemplate(models.Model):
 
     @api.model
     def _check_company_domain(self, companies):
-        return ['|', ('company_ids', '=', False), ('company_ids', 'in', companies.ids)]
+        if not companies:
+            return Domain('company_ids', '=', False)
+        if isinstance(companies, unquote):
+            return Domain('company_ids', 'in', unquote(f'{companies} + [False]'))
+        return Domain('company_ids', 'in', models.to_record_ids(companies) + [False])
