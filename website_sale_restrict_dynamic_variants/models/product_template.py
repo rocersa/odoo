@@ -1,6 +1,7 @@
 import logging
 
 from odoo import models, fields
+from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
@@ -18,11 +19,26 @@ class ProductTemplate(models.Model):
     )
 
     # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+
+    def _should_filter_by_website(self):
+        """Return True when we are in a website/frontend request context."""
+        return bool(request and getattr(request, 'is_frontend', False))
+
+    def _get_visible_variants(self):
+        """Return variants that are active and visible on the current website."""
+        variants = self.product_variant_ids.filtered('active')
+        if self._should_filter_by_website() and hasattr(variants, 'is_visible_on_current_website'):
+            variants = variants.filtered(lambda p: p.is_visible_on_current_website())
+        return variants
+
+    # -------------------------------------------------------------------------
     # Combination possibility
     # -------------------------------------------------------------------------
 
     def _is_combination_possible(self, combination, parent_combination=None, ignore_no_variant=False):
-        """Mark missing combinations as impossible when restriction is enabled."""
+        """Mark missing or invisible combinations as impossible when restriction is enabled."""
         possible = super()._is_combination_possible(
             combination, parent_combination=parent_combination, ignore_no_variant=ignore_no_variant
         )
@@ -33,6 +49,9 @@ class ProductTemplate(models.Model):
             variant = self._get_variant_for_combination(combination)
             if not variant or not variant.active:
                 return False
+            if self._should_filter_by_website() and hasattr(variant, 'is_visible_on_current_website'):
+                if not variant.is_visible_on_current_website():
+                    return False
 
         return True
 
@@ -51,7 +70,7 @@ class ProductTemplate(models.Model):
             res['restrict_dynamic_variants'] = True
             res['existing_combinations'] = [
                 tuple(product.product_template_attribute_value_ids.ids)
-                for product in self.product_variant_ids
+                for product in self._get_visible_variants()
                 if product.product_template_attribute_value_ids
             ]
         return res
@@ -81,6 +100,15 @@ class ProductTemplate(models.Model):
                 return self.env['product.product']
             if not variant.active:
                 return self.env['product.product']
+            if self._should_filter_by_website() and hasattr(variant, 'is_visible_on_current_website'):
+                if not variant.is_visible_on_current_website():
+                    if log_warning:
+                        _logger.warning(
+                            "Dynamic variant creation blocked for template %s (id=%s) "
+                            "because the variant is not visible on the current website.",
+                            self.name, self.id,
+                        )
+                    return self.env['product.product']
             return variant
 
         return super()._create_product_variant(combination, log_warning=log_warning)
