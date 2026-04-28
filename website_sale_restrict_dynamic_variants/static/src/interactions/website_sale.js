@@ -1,6 +1,8 @@
 import { patch } from '@web/core/utils/patch';
 import { WebsiteSale } from '@website_sale/interactions/website_sale';
 
+console.log('[RestrictDynamicVariants] JS module loaded');
+
 patch(WebsiteSale.prototype, {
     /**
      * Override _checkExclusions to grey out attribute values that do not
@@ -15,16 +17,26 @@ patch(WebsiteSale.prototype, {
      * `disabled` attribute.
      */
     _checkExclusions(parent, combination) {
+        console.log('[RestrictDynamicVariants] _checkExclusions called', {parent, combination});
+
         super._checkExclusions(parent, combination);
 
         const combinationDataJson = parent.querySelector('ul[data-attribute-exclusions]')
             ?.dataset.attributeExclusions;
+        console.log('[RestrictDynamicVariants] combinationDataJson:', combinationDataJson);
         if (!combinationDataJson) {
+            console.log('[RestrictDynamicVariants] aborting: no combinationDataJson');
             return;
         }
 
         const combinationData = JSON.parse(combinationDataJson);
-        if (!combinationData.restrict_dynamic_variants || !combinationData.existing_combinations) {
+        console.log('[RestrictDynamicVariants] combinationData:', combinationData);
+        if (!combinationData.restrict_dynamic_variants) {
+            console.log('[RestrictDynamicVariants] aborting: restrict_dynamic_variants is false');
+            return;
+        }
+        if (!combinationData.existing_combinations) {
+            console.log('[RestrictDynamicVariants] aborting: no existing_combinations');
             return;
         }
 
@@ -47,6 +59,7 @@ patch(WebsiteSale.prototype, {
         const allInputs = parent.querySelectorAll(
             'input.js_variant_change, select.css_attribute_select option'
         );
+        console.log('[RestrictDynamicVariants] allInputs count:', allInputs.length);
 
         // Re-enable everything first so we don't leave stale disabled states
         // from a previous combination.
