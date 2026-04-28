@@ -1,50 +1,33 @@
-import { patch } from '@web/core/utils/patch';
-import { WebsiteSale } from '@website_sale/interactions/website_sale';
+import { patch } from "@web/core/utils/patch";
+import { WebsiteSale } from "@website_sale/js/website_sale";
 
-console.log('[RestrictDynamicVariants] JS module loaded');
-
+/**
+ * Patch the WebsiteSale interaction to grey out unavailable variant combinations
+ * when the template restricts variants to existing ones only.
+ */
 patch(WebsiteSale.prototype, {
     /**
-     * Override _checkExclusions to grey out attribute values that do not
-     * participate in any existing variant when restrict_dynamic_variants is
-     * enabled on the product template.
-     *
-     * For select / radio the candidate *replaces* the currently-selected value
-     * on its own attribute line so the user can see which other values are
-     * available without the old value blocking every option.
-     *
-     * Greyed-out inputs and options are also made unclickable by setting the
-     * `disabled` attribute.
+     * @override
+     * After Odoo's standard exclusion check, additionally disable any option that
+     * does not participate in at least one existing visible variant.
      */
     _checkExclusions(parent, combination) {
-        console.log('[RestrictDynamicVariants] _checkExclusions called', {parent, combination});
-
+        // Let Odoo do its normal exclusions first.
         super._checkExclusions(parent, combination);
 
         const combinationDataJson = parent.querySelector('ul[data-attribute-exclusions]')
             ?.dataset.attributeExclusions;
-        console.log('[RestrictDynamicVariants] combinationDataJson:', combinationDataJson);
         if (!combinationDataJson) {
-            console.log('[RestrictDynamicVariants] aborting: no combinationDataJson');
             return;
         }
-
         const combinationData = JSON.parse(combinationDataJson);
-        console.log('[RestrictDynamicVariants] combinationData:', combinationData);
-        if (!combinationData.restrict_dynamic_variants) {
-            console.log('[RestrictDynamicVariants] aborting: restrict_dynamic_variants is false');
-            return;
-        }
         if (!combinationData.existing_combinations) {
-            console.log('[RestrictDynamicVariants] aborting: no existing_combinations');
             return;
         }
 
         const existingCombinations = combinationData.existing_combinations;
-        console.log('[RestrictDynamicVariants] existingCombinations:', existingCombinations);
-        console.log('[RestrictDynamicVariants] current combination:', combination);
 
-        // Build a map: attribute-line name → array of currently-selected ptav ids
+        // Build a map of currently-selected values grouped by attribute line name.
         const selectedByName = {};
         parent.querySelectorAll('input.js_variant_change:checked, select.js_variant_change').forEach(
             (el) => {
@@ -54,46 +37,32 @@ patch(WebsiteSale.prototype, {
                 selectedByName[el.name].push(parseInt(el.value));
             }
         );
-        console.log('[RestrictDynamicVariants] selectedByName:', selectedByName);
 
+        // Reset disabled state on all inputs so we can re-evaluate after changes.
         const allInputs = parent.querySelectorAll(
             'input.js_variant_change, select.css_attribute_select option'
         );
-        console.log('[RestrictDynamicVariants] allInputs count:', allInputs.length);
-
-        // Re-enable everything first so we don't leave stale disabled states
-        // from a previous combination.
         allInputs.forEach((el) => {
             el.disabled = false;
         });
 
-        let disabledCount = 0;
-
         allInputs.forEach((el) => {
-            // Skip elements already excluded by standard rules
+            // If the option is already excluded by Odoo's standard rules, mark it
+            // disabled and skip further checks.
             if (el.classList.contains('css_not_available') || el.closest('.css_not_available')) {
                 el.disabled = true;
-                disabledCount++;
                 return;
             }
 
             const ptavId = parseInt(el.value);
-            if (isNaN(ptavId)) {
+            if (isNaN(ptavId) || combination.includes(ptavId)) {
                 return;
             }
 
-            // Keep currently-selected values enabled so the user can change away
-            if (combination.includes(ptavId)) {
-                return;
-            }
-
-            // Determine which attribute line this candidate belongs to
             const attrLineName = el.matches('option') ? el.parentElement.name : el.name;
             const isCheckbox = el.matches('input[type="checkbox"]');
 
-            // Build the test combination:
-            // - For radio / select: replace the current value on this attribute line
-            // - For multi-checkbox: add to the existing selections on this line
+            // Build a test combination where this option is selected on its attribute line.
             const testCombination = [];
             for (const [name, ptavs] of Object.entries(selectedByName)) {
                 if (name === attrLineName) {
@@ -107,25 +76,18 @@ patch(WebsiteSale.prototype, {
                 }
             }
 
+            // Only keep this option if the test combination is a subset of at
+            // least one existing visible variant.
             const isAvailable = existingCombinations.some((existing) => {
                 return testCombination.every((req) => existing.includes(req));
             });
 
             if (!isAvailable) {
-                // Grey out without a tooltip (excludedBy / attributeNames are null)
+                // Force Odoo's CSS class for visual grey-out.
                 this._disableInput(parent, ptavId, null, null);
+                // Also make it un-interactive.
                 el.disabled = true;
-                disabledCount++;
-                console.log(
-                    '[RestrictDynamicVariants] DISABLED ptav=%d on attr=%s (test=%o)',
-                    ptavId, attrLineName, testCombination
-                );
             }
         });
-
-        console.log(
-            '[RestrictDynamicVariants] total options=%d, disabled=%d',
-            allInputs.length, disabledCount
-        );
     },
 });

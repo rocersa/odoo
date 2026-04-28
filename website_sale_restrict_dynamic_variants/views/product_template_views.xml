@@ -21,7 +21,7 @@
             <xpath expr="//t[@t-set='ptavs']" position="attributes">
                 <attribute name="t-value">
                     ptal.product_template_value_ids._only_active().filtered(
-                        lambda ptav: not product.restrict_dynamic_variants or ptav.id in (visible_ptav_ids or [])
+                        lambda ptav: not filter_by_website or ptav.id in (visible_ptav_ids or [])
                     )
                 </attribute>
             </xpath>

@@ -9,17 +9,12 @@ class WebsiteSaleRestrictDynamicVariants(WebsiteSale):
     def _prepare_product_values(self, product, category, **kwargs):
         """Pass visible ptav ids to the template so unavailable options can be hidden."""
         vals = super()._prepare_product_values(product, category, **kwargs)
-        if product.restrict_dynamic_variants:
+        if product._should_filter_by_website():
             visible_ptavs = set()
             for variant in product._get_visible_variants():
                 visible_ptavs.update(variant.product_template_attribute_value_ids.ids)
             vals['visible_ptav_ids'] = list(visible_ptavs)
-            import logging
-            _logger = logging.getLogger(__name__)
-            _logger.info(
-                "Product %s (id=%s): prepared %d visible ptavs for template",
-                product.name, product.id, len(visible_ptavs),
-            )
+            vals['filter_by_website'] = True
         return vals
 
     @http.route(
@@ -33,7 +28,7 @@ class WebsiteSaleRestrictDynamicVariants(WebsiteSale):
                              media_data, combination_ids=None):
         """Prevent media updates from implicitly creating a missing variant."""
         product_template = request.env['product.template'].browse(int(product_template_id))
-        if product_template.restrict_dynamic_variants and combination_ids:
+        if product_template_id and combination_ids:
             combination = request.env['product.template.attribute.value'].browse(combination_ids)
             product_product = product_template._get_variant_for_combination(combination)
             if not product_product:
