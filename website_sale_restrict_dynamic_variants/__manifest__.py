@@ -1,6 +1,6 @@
 {
     'name': 'Restrict Dynamic Variants',
-    'version': '1.0.0',
+    'version': '1.0.2',
     'category': 'Website/Website',
     'summary': 'Prevent on-the-fly creation of dynamic variants for selected products',
     'description': """
