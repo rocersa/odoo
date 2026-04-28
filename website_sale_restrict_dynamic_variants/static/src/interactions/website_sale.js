@@ -1,5 +1,5 @@
 import { patch } from "@web/core/utils/patch";
-import { WebsiteSale } from "@website_sale/js/website_sale";
+import { WebsiteSale } from "@website_sale/interactions/website_sale";
 
 /**
  * Patch the WebsiteSale interaction to grey out unavailable variant combinations
