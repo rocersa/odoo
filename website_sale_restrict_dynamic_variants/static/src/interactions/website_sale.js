@@ -29,6 +29,8 @@ patch(WebsiteSale.prototype, {
         }
 
         const existingCombinations = combinationData.existing_combinations;
+        console.log('[RestrictDynamicVariants] existingCombinations:', existingCombinations);
+        console.log('[RestrictDynamicVariants] current combination:', combination);
 
         // Build a map: attribute-line name → array of currently-selected ptav ids
         const selectedByName = {};
@@ -40,6 +42,7 @@ patch(WebsiteSale.prototype, {
                 selectedByName[el.name].push(parseInt(el.value));
             }
         );
+        console.log('[RestrictDynamicVariants] selectedByName:', selectedByName);
 
         const allInputs = parent.querySelectorAll(
             'input.js_variant_change, select.css_attribute_select option'
@@ -51,10 +54,13 @@ patch(WebsiteSale.prototype, {
             el.disabled = false;
         });
 
+        let disabledCount = 0;
+
         allInputs.forEach((el) => {
             // Skip elements already excluded by standard rules
             if (el.classList.contains('css_not_available') || el.closest('.css_not_available')) {
                 el.disabled = true;
+                disabledCount++;
                 return;
             }
 
@@ -96,7 +102,17 @@ patch(WebsiteSale.prototype, {
                 // Grey out without a tooltip (excludedBy / attributeNames are null)
                 this._disableInput(parent, ptavId, null, null);
                 el.disabled = true;
+                disabledCount++;
+                console.log(
+                    '[RestrictDynamicVariants] DISABLED ptav=%d on attr=%s (test=%o)',
+                    ptavId, attrLineName, testCombination
+                );
             }
         });
+
+        console.log(
+            '[RestrictDynamicVariants] total options=%d, disabled=%d',
+            allInputs.length, disabledCount
+        );
     },
 });
