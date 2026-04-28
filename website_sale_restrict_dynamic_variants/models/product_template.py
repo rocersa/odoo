@@ -24,13 +24,41 @@ class ProductTemplate(models.Model):
 
     def _should_filter_by_website(self):
         """Return True when we are in a website/frontend request context."""
-        return bool(request and getattr(request, 'is_frontend', False))
+        # website_id is injected into the env context by the website dispatcher
+        if self.env.context.get('website_id'):
+            return True
+        if not request:
+            return False
+        # is_frontend is set by http_routing when the route has website=True
+        if getattr(request, 'is_frontend', False):
+            return True
+        # Fallback: if request.website is populated we are clearly on a website
+        if hasattr(request, 'website') and request.website:
+            return True
+        return False
 
     def _get_visible_variants(self):
         """Return variants that are active and visible on the current website."""
         variants = self.product_variant_ids.filtered('active')
         if self._should_filter_by_website() and hasattr(variants, 'is_visible_on_current_website'):
+            before = len(variants)
             variants = variants.filtered(lambda p: p.is_visible_on_current_website())
+            _logger.info(
+                "Template %s (id=%s): filtered %d → %d variants by website "
+                "(website_id=%s, request.is_frontend=%s)",
+                self.name, self.id, before, len(variants),
+                self.env.context.get('website_id'),
+                getattr(request, 'is_frontend', 'N/A') if request else 'no-request',
+            )
+        else:
+            _logger.info(
+                "Template %s (id=%s): skipping website filter "
+                "(website_id=%s, request.is_frontend=%s, has_method=%s)",
+                self.name, self.id,
+                self.env.context.get('website_id'),
+                getattr(request, 'is_frontend', 'N/A') if request else 'no-request',
+                hasattr(variants, 'is_visible_on_current_website'),
+            )
         return variants
 
     # -------------------------------------------------------------------------
@@ -51,6 +79,11 @@ class ProductTemplate(models.Model):
                 return False
             if self._should_filter_by_website() and hasattr(variant, 'is_visible_on_current_website'):
                 if not variant.is_visible_on_current_website():
+                    _logger.info(
+                        "Combination not possible for template %s (id=%s): "
+                        "variant %s is not visible on current website.",
+                        self.name, self.id, variant.id,
+                    )
                     return False
 
         return True
@@ -68,11 +101,16 @@ class ProductTemplate(models.Model):
         )
         if self.restrict_dynamic_variants:
             res['restrict_dynamic_variants'] = True
+            visible_variants = self._get_visible_variants()
             res['existing_combinations'] = [
                 tuple(product.product_template_attribute_value_ids.ids)
-                for product in self._get_visible_variants()
+                for product in visible_variants
                 if product.product_template_attribute_value_ids
             ]
+            _logger.info(
+                "Template %s (id=%s): returning %d existing combinations",
+                self.name, self.id, len(res['existing_combinations']),
+            )
         return res
 
     # -------------------------------------------------------------------------

@@ -14,6 +14,12 @@ class WebsiteSaleRestrictDynamicVariants(WebsiteSale):
             for variant in product._get_visible_variants():
                 visible_ptavs.update(variant.product_template_attribute_value_ids.ids)
             vals['visible_ptav_ids'] = list(visible_ptavs)
+            import logging
+            _logger = logging.getLogger(__name__)
+            _logger.info(
+                "Product %s (id=%s): prepared %d visible ptavs for template",
+                product.name, product.id, len(visible_ptavs),
+            )
         return vals
 
     @http.route(
