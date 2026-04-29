@@ -16,7 +16,7 @@
                 expr="//field[@name='order_line']//list//field[@name='price_unit']"
                 position="before"
             >
-                <field name="line_weight" />
+                <field name="line_weight" options="{'precision': 0}" />
             </xpath>
             <xpath
                 expr="//field[@name='tax_totals']"
@@ -27,7 +27,7 @@
                             <strong>Total Weight:</strong>
                         </div>
                         <div class="col-5 text-end" style="white-space: nowrap;">
-                            <field name="total_weight" widget="float" /> kg
+                            <field name="total_weight" widget="float" options="{'precision': 0}" /> kg
                         </div>
                 </div>
             </xpath>
