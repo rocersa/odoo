@@ -38,6 +38,34 @@ class ProductTemplate(models.Model):
             else:
                 product.company_ids = [(5,)]
 
+    def _get_attribute_exclusions(
+        self, parent_combination=None, parent_name=None, combination_ids=None
+    ):
+        result = super()._get_attribute_exclusions(
+            parent_combination=parent_combination,
+            parent_name=parent_name,
+            combination_ids=combination_ids,
+        )
+        # Hide combinations whose variant is restricted by company for the
+        # current user.  We compare the full set of variants (sudo) with the
+        # accessible set (respects ir.rule) to find restricted ones.
+        all_variants = self.sudo().product_variant_ids
+        accessible_variants = self.product_variant_ids
+        restricted_variants = all_variants - accessible_variants
+        if restricted_variants:
+            restricted_combinations = [
+                tuple(product.product_template_attribute_value_ids.ids)
+                for product in restricted_variants
+                if product.product_template_attribute_value_ids
+            ]
+            if restricted_combinations:
+                archived = set(
+                    tuple(c) for c in result.get('archived_combinations', [])
+                )
+                archived.update(restricted_combinations)
+                result['archived_combinations'] = list(archived)
+        return result
+
     @api.model
     def _check_company_domain(self, companies):
         if not companies:
