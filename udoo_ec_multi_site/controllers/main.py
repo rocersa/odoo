@@ -31,3 +31,13 @@ class MultiWebsiteSale(WebsiteSale):
             vals['search_categories_ids'] = all_cats.filtered(is_visible).ids
 
         return vals
+
+    def _prepare_product_values(self, product, category, **kwargs):
+        vals = super()._prepare_product_values(product, category, **kwargs)
+        visible_variants = product.product_variant_ids.filtered(
+            lambda p: p.is_visible_on_current_website()
+        )
+        vals['product'] = product.with_context(
+            visible_variant_ids=visible_variants.ids
+        )
+        return vals
