@@ -2,6 +2,7 @@
 
 from odoo import api, fields, models
 from odoo.fields import Domain
+from odoo.tools.misc import unquote
 
 
 class ProductProduct(models.Model):
@@ -31,12 +32,5 @@ class ProductProduct(models.Model):
         if not companies:
             return Domain('company_ids', '=', False)
         if isinstance(companies, str):
-            company_ids = companies
-        else:
-            company_ids = models.to_record_ids(companies)
-        return Domain([
-            '|',
-            '|', ('company_ids', '=', False), ('company_ids', 'in', company_ids),
-            '&', ('company_ids', '=', False),
-                 '|', ('product_tmpl_id.company_ids', '=', False), ('product_tmpl_id.company_ids', 'in', company_ids)
-        ])
+            return Domain('company_ids', 'in', unquote(f'{companies} + [False]'))
+        return Domain('company_ids', 'in', models.to_record_ids(companies) + [False])
