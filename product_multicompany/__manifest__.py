@@ -5,7 +5,7 @@
     'name': 'Multi-Company Product',
     'category': 'Product',
     'summary': 'Assign products to multiple companies instead of a single company or all companies',
-    'version': '1.0.9',
+    'version': '1.1.0',
     'license': 'LGPL-3',
     'author': 'Sveltware Solutions',
     'website': 'https://www.linkedin.com/in/sveltware',

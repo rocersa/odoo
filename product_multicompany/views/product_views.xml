@@ -1,15 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Product Template Form View -->
+    <!-- Product Template Common Form View -->
     <record id="view_product_template_form_multicompany" model="ir.ui.view">
         <field name="name">product.template.form.multicompany</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" groups="base.group_multi_company" position="replace">
+            <xpath expr="//field[@name='company_id'][@groups='base.group_multi_company']" position="replace">
                 <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
-            </field>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product Template Only Form View -->
+    <record id="view_product_template_only_form_multicompany" model="ir.ui.view">
+        <field name="name">product.template.only.form.multicompany</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id'][@groups='base.group_multi_company']" position="replace">
+                <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
+            </xpath>
         </field>
     </record>
 
@@ -19,9 +31,9 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" groups="base.group_multi_company" position="replace">
+            <xpath expr="//field[@name='company_id'][@groups='base.group_multi_company']" position="replace">
                 <field name="company_ids" widget="many2many_tags" optional="show" groups="base.group_multi_company"/>
-            </field>
+            </xpath>
         </field>
     </record>
 
@@ -31,9 +43,9 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" groups="base.group_multi_company" position="replace">
+            <xpath expr="//field[@name='company_id'][@groups='base.group_multi_company']" position="replace">
                 <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
-            </field>
+            </xpath>
         </field>
     </record>
 
@@ -58,9 +70,9 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_product_tree_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" groups="base.group_multi_company" position="replace">
+            <xpath expr="//field[@name='company_id'][@groups='base.group_multi_company']" position="replace">
                 <field name="company_ids" widget="many2many_tags" optional="show" groups="base.group_multi_company"/>
-            </field>
+            </xpath>
         </field>
     </record>
 
