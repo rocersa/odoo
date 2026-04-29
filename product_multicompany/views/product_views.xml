@@ -7,10 +7,7 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" groups="base.group_multi_company" position="attributes">
-                <attribute name="readonly">1</attribute>
-            </field>
-            <field name="company_id" groups="base.group_multi_company" position="after">
+            <field name="company_id" groups="base.group_multi_company" position="replace">
                 <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
             </field>
         </field>
@@ -22,11 +19,7 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" position="attributes">
-                <attribute name="readonly">1</attribute>
-                <attribute name="optional">show</attribute>
-            </field>
-            <field name="company_id" position="after">
+            <field name="company_id" groups="base.group_multi_company" position="replace">
                 <field name="company_ids" widget="many2many_tags" optional="show" groups="base.group_multi_company"/>
             </field>
         </field>
@@ -38,10 +31,7 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" groups="base.group_multi_company" position="attributes">
-                <attribute name="readonly">1</attribute>
-            </field>
-            <field name="company_id" groups="base.group_multi_company" position="after">
+            <field name="company_id" groups="base.group_multi_company" position="replace">
                 <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
             </field>
         </field>
@@ -68,11 +58,7 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_product_tree_view"/>
         <field name="arch" type="xml">
-            <field name="company_id" position="attributes">
-                <attribute name="readonly">1</attribute>
-                <attribute name="optional">show</attribute>
-            </field>
-            <field name="company_id" position="after">
+            <field name="company_id" groups="base.group_multi_company" position="replace">
                 <field name="company_ids" widget="many2many_tags" optional="show" groups="base.group_multi_company"/>
             </field>
         </field>
