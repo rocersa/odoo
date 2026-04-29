@@ -1,21 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, models
+from odoo import models
+from odoo.fields import Domain
 
 
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
-    @api.constrains('company_id', 'order_line')
-    def _check_order_line_company_id(self):
-        for order in self:
-            bad_lines = order.order_line.filtered(
-                lambda l: l.product_id._get_effective_company_ids()
-                and order.company_id not in l.product_id._get_effective_company_ids()
-            )
-            if bad_lines:
-                bad_products = bad_lines.product_id.mapped('display_name')
-                raise models.ValidationError(
-                    "The following products are not available in the company '%s': %s"
-                    % (order.company_id.display_name, ', '.join(bad_products))
-                )
+    def _get_product_catalog_domain(self):
+        return (
+            Domain('company_ids', '=', False)
+            | Domain('company_ids', 'in', self.env.companies.ids)
+        ) & Domain('type', '!=', 'combo') & Domain('purchase_ok', '=', True)
