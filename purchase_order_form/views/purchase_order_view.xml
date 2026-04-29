@@ -7,16 +7,22 @@
         <field name="inherit_id" ref="purchase.purchase_order_form" />
         <field name="arch" type="xml">
             <xpath
-                expr="//field[@name='order_line']//list"
-                position="attributes"
+                expr="//field[@name='order_line']"
+                position="before"
             >
-                <attribute name="default_order">product_id</attribute>
+                <button
+                    name="action_sort_lines_by_product"
+                    type="object"
+                    string="Sort Lines by Product"
+                    invisible="not order_line"
+                    class="btn btn-secondary mb-2"
+                />
             </xpath>
             <xpath
                 expr="//field[@name='order_line']//list//field[@name='price_unit']"
                 position="before"
             >
-                <field name="line_weight" options="{'precision': 0}" />
+                <field name="line_weight" digits="[16, 0]" />
             </xpath>
             <xpath
                 expr="//field[@name='tax_totals']"
@@ -27,7 +33,7 @@
                             <strong>Total Weight:</strong>
                         </div>
                         <div class="col-5 text-end" style="white-space: nowrap;">
-                            <field name="total_weight" widget="float" options="{'precision': 0}" /> kg
+                            <field name="total_weight" widget="float" digits="[16, 0]" /> kg
                         </div>
                 </div>
             </xpath>

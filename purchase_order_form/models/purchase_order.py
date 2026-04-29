@@ -42,3 +42,11 @@ class PurchaseOrder(models.Model):
             po.total_weight = sum(po.mapped("order_line.line_weight"))
             if default_weight_uom:
                 po.total_weight_uom_id = int(default_weight_uom)
+
+    def action_sort_lines_by_product(self):
+        for order in self:
+            sorted_lines = order.order_line.sorted(
+                lambda line: line.product_id.display_name or ""
+            )
+            for index, line in enumerate(sorted_lines):
+                line.sequence = index
