@@ -25,18 +25,6 @@
         </field>
     </record>
 
-    <!-- Product Product Normal Form View -->
-    <record id="product_normal_form_view_inherit_multicompany" model="ir.ui.view">
-        <field name="name">product.product.form.multicompany.inherit</field>
-        <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_normal_form_view"/>
-        <field name="arch" type="xml">
-            <xpath expr="//page[@name='general_information']//field[@name='company_id']" position="replace">
-                <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
-            </xpath>
-        </field>
-    </record>
-
     <!-- Product Product Easy Edit Form View -->
     <record id="product_variant_easy_edit_view_inherit_multicompany" model="ir.ui.view">
         <field name="name">product.product.easy.edit.multicompany.inherit</field>
