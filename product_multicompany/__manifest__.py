@@ -5,7 +5,7 @@
     'name': 'Multi-Company Product',
     'category': 'Product',
     'summary': "Filter each company's product catalog by a per-product list of companies.",
-    'version': '1.2.2',
+    'version': '1.2.3',
     'license': 'LGPL-3',
     'author': 'Sveltware Solutions',
     'website': 'https://www.linkedin.com/in/sveltware',
@@ -15,6 +15,6 @@
     'data': [
         'views/product_views.xml',
     ],
-    'installable': True,
+    'installable': False,
     'auto_install': False,
 }
