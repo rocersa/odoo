@@ -1,54 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Product Template Common Form View -->
+    <!-- Add a per-product Catalogs field on the Sales tab of the product template form. -->
     <record id="view_product_template_form_multicompany" model="ir.ui.view">
         <field name="name">product.template.form.multicompany</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='general_information']//field[@name='company_id']" position="replace">
+            <xpath expr="//page[@name='sales']//group[@name='extra_info']/field[@name='product_tag_ids']" position="after">
                 <field name="company_ids" widget="many2many_tags" groups="base.group_multi_company"/>
             </xpath>
-        </field>
-    </record>
-
-    <!-- Product Template Tree View -->
-    <record id="view_product_template_tree_multicompany" model="ir.ui.view">
-        <field name="name">product.template.tree.multicompany</field>
-        <field name="model">product.template</field>
-        <field name="inherit_id" ref="product.product_template_tree_view"/>
-        <field name="arch" type="xml">
-            <field name="company_id" position="replace">
-                <field name="company_ids" widget="many2many_tags" optional="show" groups="base.group_multi_company"/>
-            </field>
-        </field>
-    </record>
-
-    <!-- Product Product Easy Edit Form View -->
-    <record id="product_variant_easy_edit_view_inherit_multicompany" model="ir.ui.view">
-        <field name="name">product.product.easy.edit.multicompany.inherit</field>
-        <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
-        <field name="arch" type="xml">
-            <xpath expr="//group[@name='sales']/field[@name='additional_product_tag_ids']" position="after">
-                <field name="company_ids"
-                       widget="many2many_tags"
-                       placeholder="Leave blank to inherit from template"
-                       groups="base.group_multi_company"/>
-            </xpath>
-        </field>
-    </record>
-
-    <!-- Product Product Tree View -->
-    <record id="view_product_product_tree_multicompany" model="ir.ui.view">
-        <field name="name">product.product.tree.multicompany</field>
-        <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_product_tree_view"/>
-        <field name="arch" type="xml">
-            <field name="company_id" position="replace">
-                <field name="company_ids" widget="many2many_tags" optional="show" groups="base.group_multi_company"/>
-            </field>
         </field>
     </record>
 
