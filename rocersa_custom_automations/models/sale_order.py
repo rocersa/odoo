@@ -9,7 +9,7 @@ class SaleOrder(models.Model):
         """Return an error message if the order lacks a shipping method."""
         self.ensure_one()
         if not self.carrier_id and not self.is_all_service:
-            return _("Please select a shipping method before confirming this order.")
+            return _("Please select a shipping method before sending this order.")
         return False
 
     def _confirmation_error_message(self):
