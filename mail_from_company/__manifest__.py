@@ -1,6 +1,6 @@
 {
     'name': 'Mail From Company',
-    'version': '1.0.3',
+    'version': '1.0.4',
     'summary': 'Prepend company name to the From header in outgoing emails',
     'description': """
         In a multi-company setup, this module prepends the record's company name
