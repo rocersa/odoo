@@ -5,6 +5,14 @@ from odoo import api, models, tools
 _logger = logging.getLogger(__name__)
 
 
+def _trim_company_name(name):
+    """Drop the last space-separated token (usually the country code)."""
+    parts = (name or '').split()
+    if len(parts) > 1:
+        return ' '.join(parts[:-1])
+    return name or ''
+
+
 class MailComposeMessage(models.TransientModel):
     _inherit = 'mail.compose.message'
 
@@ -47,7 +55,8 @@ class MailComposeMessage(models.TransientModel):
             if company:
                 user_name = self.env.user.name
                 email = tools.email_normalize(composer.email_from) or self.env.user.email
-                composer.email_from = tools.formataddr((f"{company.name} | {user_name}", email))
+                company_name = _trim_company_name(company.name)
+                composer.email_from = tools.formataddr((f"{company_name} | {user_name}", email))
                 _logger.info(
                     '[mail_from_company] composer email_from set to: %s (company=%s)',
                     composer.email_from, company.name,
