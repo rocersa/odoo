@@ -8,7 +8,7 @@ class MailComposeMessage(models.TransientModel):
     def _compute_authorship(self):
         super()._compute_authorship()
         for composer in self:
-            if self._context.get('mail_from_company_skip'):
+            if self.env.context.get('mail_from_company_skip'):
                 continue
             # Don't override if a template explicitly sets email_from
             if composer.template_id and composer.template_id.email_from:

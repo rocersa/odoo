@@ -11,7 +11,7 @@ class MailMessage(models.Model):
                 ('email_from' not in values or not values.get('email_from'))
                 and values.get('model')
                 and values.get('res_id')
-                and not self._context.get('mail_from_company_skip')
+                and not self.env.context.get('mail_from_company_skip')
                 and self.env.user.has_group('base.group_user')
             ):
                 author_id = values.get('author_id')

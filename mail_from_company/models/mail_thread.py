@@ -13,7 +13,7 @@ class MailThread(models.AbstractModel):
             len(self) == 1
             and author_id == self.env.user.partner_id.id
             and self.env.user.has_group('base.group_user')
-            and not self._context.get('mail_from_company_skip')
+            and not self.env.context.get('mail_from_company_skip')
         ):
             user_email = tools.email_normalize(self.env.user.email_formatted)
             if user_email and tools.email_normalize(email_from or '') == user_email:
