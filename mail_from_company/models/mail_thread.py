@@ -1,10 +1,18 @@
+import logging
+
 from odoo import models, tools
+
+_logger = logging.getLogger(__name__)
 
 
 class MailThread(models.AbstractModel):
     _inherit = 'mail.thread'
 
     def _message_compute_author(self, author_id=None, email_from=None):
+        _logger.info(
+            '[mail_from_company] _message_compute_author BEFORE: model=%s res_id=%s author_id=%s email_from=%s',
+            self._name, self.id if len(self) == 1 else 'multi', author_id, email_from,
+        )
         # Treat falsy email_from as None so the super computes it from the author
         if not email_from:
             email_from = None
@@ -23,4 +31,11 @@ class MailThread(models.AbstractModel):
                     email = tools.email_normalize(email_from) or self.env.user.email
                     if email:
                         email_from = tools.formataddr((f"{record_company.name} | {user_name}", email))
+                _logger.info(
+                    '[mail_from_company] _message_compute_author AFTER: model=%s res_id=%s '
+                    'record_company=%s email_from=%s',
+                    self._name, self.id,
+                    record_company.name if record_company else 'False',
+                    email_from,
+                )
         return author_id, email_from

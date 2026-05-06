@@ -1,4 +1,8 @@
+import logging
+
 from odoo import api, models, tools
+
+_logger = logging.getLogger(__name__)
 
 
 class MailMessage(models.Model):
@@ -7,6 +11,8 @@ class MailMessage(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for values in vals_list:
+            has_email_from = 'email_from' in values
+            email_from_val = values.get('email_from')
             if (
                 ('email_from' not in values or not values.get('email_from'))
                 and values.get('model')
@@ -16,6 +22,10 @@ class MailMessage(models.Model):
             ):
                 author_id = values.get('author_id')
                 if author_id and author_id != self.env.user.partner_id.id:
+                    _logger.info(
+                        '[mail_from_company] mail.message skipping: author_id=%s != user.partner_id=%s',
+                        author_id, self.env.user.partner_id.id,
+                    )
                     continue
                 try:
                     record = self.env[values['model']].browse(values['res_id'])
@@ -25,6 +35,16 @@ class MailMessage(models.Model):
                             user_name = self.env.user.name
                             email = tools.email_normalize(self.env.user.email_formatted) or self.env.user.email
                             values['email_from'] = tools.formataddr((f"{company.name} | {user_name}", email))
+                            _logger.info(
+                                '[mail_from_company] mail.message create: model=%s res_id=%s '
+                                'company=%s email_from=%s',
+                                values['model'], values['res_id'], company.name, values['email_from'],
+                            )
                 except Exception:
-                    pass
+                    _logger.exception('[mail_from_company] mail.message create failed to compute email_from')
+            else:
+                _logger.info(
+                    '[mail_from_company] mail.message create skipping: has_email_from=%s email_from_val=%s model=%s res_id=%s',
+                    has_email_from, email_from_val, values.get('model'), values.get('res_id'),
+                )
         return super().create(vals_list)
