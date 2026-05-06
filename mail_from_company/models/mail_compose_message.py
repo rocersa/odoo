@@ -23,7 +23,8 @@ class MailComposeMessage(models.TransientModel):
             company = self.env.company
             if composer.model and composer.res_ids:
                 try:
-                    records = self.env[composer.model].browse(composer.res_ids)
+                    res_ids = composer._evaluate_res_ids()
+                    records = self.env[composer.model].browse(res_ids)
                     if hasattr(records, '_mail_get_companies'):
                         # For batch composers, use the first record's company as a reasonable default
                         record_company = records._mail_get_companies(default=company)

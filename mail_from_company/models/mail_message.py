@@ -8,7 +8,7 @@ class MailMessage(models.Model):
     def create(self, vals_list):
         for values in vals_list:
             if (
-                'email_from' not in values
+                ('email_from' not in values or not values.get('email_from'))
                 and values.get('model')
                 and values.get('res_id')
                 and not self._context.get('mail_from_company_skip')
