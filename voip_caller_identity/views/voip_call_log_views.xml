@@ -33,8 +33,8 @@
                         domain="[('call_timestamp', '>=', (context_today()).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Success" name="success" domain="[('validation_result', '=', 'success')]"/>
-                <filter string="Fallback" name="fallback" domain="[('validation_result', 'in', ['fallback_default', 'fallback_system'])]"/>
-                <filter string="Blocked/Error" name="errors" domain="[('validation_result', 'in', ['blocked', 'error'])]"/>
+                <filter string="Fallback" name="fallback" domain="[('validation_result', 'in', ['fallback_default', 'fallback_system', 'fallback_no_default', 'no_identity_proceed'])]"/>
+                <filter string="Blocked/Error" name="errors" domain="[('validation_result', 'in', ['blocked', 'no_identity_blocked', 'invalid_blocked', 'error'])]"/>
                 <separator/>
                 <group>
                     <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
