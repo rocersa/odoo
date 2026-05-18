@@ -75,6 +75,32 @@ class StockPicking(models.Model):
             ),
         )
 
+    def _create_picklist_yard_activity(self):
+        """Create a 'Send Picklist to Yard' activity if one does not already exist."""
+        self.ensure_one()
+        if self.picking_type_id.activity_trigger != 'picklist_yard':
+            return
+        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+        if not activity_type:
+            return
+        existing = self.env['mail.activity'].search([
+            ('res_model', '=', self._name),
+            ('res_id', '=', self.id),
+            ('activity_type_id', '=', activity_type.id),
+            ('summary', '=', 'Send Picklist to Yard'),
+        ], limit=1)
+        if existing:
+            return
+        self.activity_schedule(
+            'mail.mail_activity_data_todo',
+            user_id=self._get_activity_assignee(),
+            summary='Send Picklist to Yard',
+            note=_(
+                'The picking %(picking)s is ready. Please send the picklist to the yard.',
+                picking=self.name,
+            ),
+        )
+
     def _validation_error_message(self):
         """Return an error message if the picking should not be validated."""
         self.ensure_one()

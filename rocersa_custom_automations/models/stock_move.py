@@ -17,4 +17,6 @@ class StockMove(models.Model):
                 picking._create_courier_booking_activity()
             elif picking.picking_type_id.activity_trigger == 'collect_ready':
                 picking._create_collect_ready_activity()
+            elif picking.picking_type_id.activity_trigger == 'picklist_yard':
+                picking._create_picklist_yard_activity()
         return res

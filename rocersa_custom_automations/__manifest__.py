@@ -1,7 +1,7 @@
 {
     "name": "Rocersa Custom Automations",
     "summary": "Checks and balances to ensure Rocersa workflows are assigned and followed.",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Inventory",
     "depends": [
         "sale",
