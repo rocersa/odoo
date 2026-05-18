@@ -1,3 +1,4 @@
+from . import account_partial_reconcile
 from . import mail_activity
 from . import sale_order
 from . import stock_picking_type

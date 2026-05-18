@@ -112,15 +112,6 @@ class StockPicking(models.Model):
             ),
         )
 
-    def _cron_create_picklist_yard_activities(self):
-        """Create picklist yard activities for ready pickings where payment is now complete."""
-        pickings = self.search([
-            ('state', '=', 'assigned'),
-            ('picking_type_id.activity_trigger', '=', 'picklist_yard'),
-        ])
-        for picking in pickings:
-            picking._create_picklist_yard_activity()
-
     def _validation_error_message(self):
         """Return an error message if the picking should not be validated."""
         self.ensure_one()
