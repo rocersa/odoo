@@ -76,10 +76,21 @@ class StockPicking(models.Model):
         )
 
     def _create_picklist_yard_activity(self):
-        """Create a 'Send Picklist to Yard' activity if one does not already exist."""
+        """Create a 'Send Picklist to Yard' activity if one does not already exist.
+
+        The activity is only created when the picking is Ready (assigned) and,
+        if the picking is linked to a sale order, all related invoices are paid.
+        """
         self.ensure_one()
         if self.picking_type_id.activity_trigger != 'picklist_yard':
             return
+        if self.state != 'assigned':
+            return
+        # Payment check: if linked to a sale order, all invoices must be settled.
+        if hasattr(self, 'sale_id') and self.sale_id:
+            invoices = self.sale_id.invoice_ids.filtered(lambda inv: inv.state != 'cancel')
+            if not invoices or not all(inv.payment_state in ('paid', 'reversed') for inv in invoices):
+                return
         activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
         if not activity_type:
             return
@@ -100,6 +111,15 @@ class StockPicking(models.Model):
                 picking=self.name,
             ),
         )
+
+    def _cron_create_picklist_yard_activities(self):
+        """Create picklist yard activities for ready pickings where payment is now complete."""
+        pickings = self.search([
+            ('state', '=', 'assigned'),
+            ('picking_type_id.activity_trigger', '=', 'picklist_yard'),
+        ])
+        for picking in pickings:
+            picking._create_picklist_yard_activity()
 
     def _validation_error_message(self):
         """Return an error message if the picking should not be validated."""
