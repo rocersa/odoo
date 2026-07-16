@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="reorder_suggestion_report_view_tree" model="ir.ui.view">
+        <field name="name">reorder.suggestion.report.tree</field>
+        <field name="model">reorder.suggestion.report</field>
+        <field name="arch" type="xml">
+            <tree create="0" edit="0" delete="0">
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <field name="demand_pattern"/>
+                <field name="stockout_risk_score"
+                       decoration-danger="stockout_risk_score == 'critical'"
+                       decoration-warning="stockout_risk_score == 'high'"
+                       decoration-success="stockout_risk_score == 'low'"/>
+                <field name="annual_demand_units"/>
+                <field name="avg_order_size"/>
+                <field name="max_order_size"/>
+                <field name="avg_order_interval_days"/>
+                <field name="lead_days"/>
+                <field name="coverage_days"/>
+                <field name="product_min_qty"/>
+                <field name="suggested_min_qty"/>
+                <field name="product_max_qty"/>
+                <field name="suggested_max_qty"/>
+                <field name="suggested_order_qty"/>
+                <field name="last_sale_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="reorder_suggestion_report_view_search" model="ir.ui.view">
+        <field name="name">reorder.suggestion.report.search</field>
+        <field name="model">reorder.suggestion.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <filter string="High/Critical Risk" name="filter_high_risk"
+                        domain="[('stockout_risk_score', 'in', ('high', 'critical'))]"/>
+                <filter string="Lumpy or Intermittent" name="filter_lumpy"
+                        domain="[('demand_pattern', 'in', ('lumpy', 'intermittent'))]"/>
+                <filter string="Excess Coverage" name="filter_excess"
+                        domain="[('coverage_days', '&gt;', 365)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Demand Pattern" name="group_demand_pattern"
+                            context="{'group_by': 'demand_pattern'}"/>
+                    <filter string="Stockout Risk" name="group_stockout_risk"
+                            context="{'group_by': 'stockout_risk_score'}"/>
+                    <filter string="Warehouse" name="group_warehouse"
+                            context="{'group_by': 'warehouse_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_reorder_suggestion_report" model="ir.actions.act_window">
+        <field name="name">Reorder Suggestions</field>
+        <field name="res_model">reorder.suggestion.report</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="reorder_suggestion_report_view_search"/>
+        <field name="context">{'search_default_filter_high_risk': 1}</field>
+    </record>
+
+    <menuitem id="menu_reorder_suggestion_report"
+              name="Reorder Suggestions"
+              parent="stock.menu_warehouse_report"
+              action="action_reorder_suggestion_report"
+              sequence="50"/>
+
+</odoo>

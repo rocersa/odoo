@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_reorder_suggestion_report_user,Reorder Suggestion Report User,model_reorder_suggestion_report,stock.group_stock_user,1,0,0,0
+access_reorder_suggestion_report_manager,Reorder Suggestion Report Manager,model_reorder_suggestion_report,stock.group_stock_manager,1,0,0,0
