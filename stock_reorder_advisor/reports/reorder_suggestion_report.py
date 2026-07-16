@@ -23,7 +23,6 @@ class ReorderSuggestionReport(models.Model):
     avg_order_size = fields.Float(readonly=True)
     max_order_size = fields.Float(readonly=True)
     avg_order_interval_days = fields.Float(readonly=True)
-    lead_days = fields.Float(readonly=True)
     coverage_days = fields.Float(readonly=True)
     product_min_qty = fields.Float(readonly=True)
     product_max_qty = fields.Float(readonly=True)
@@ -52,7 +51,6 @@ class ReorderSuggestionReport(models.Model):
                     op.avg_order_size,
                     op.max_order_size,
                     op.avg_order_interval_days,
-                    op.lead_days,
                     op.coverage_days,
                     op.product_min_qty,
                     op.product_max_qty,

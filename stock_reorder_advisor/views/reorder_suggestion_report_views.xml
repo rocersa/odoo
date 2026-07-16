@@ -17,7 +17,6 @@
                 <field name="avg_order_size"/>
                 <field name="max_order_size"/>
                 <field name="avg_order_interval_days"/>
-                <field name="lead_days"/>
                 <field name="coverage_days"/>
                 <field name="product_min_qty"/>
                 <field name="suggested_min_qty"/>

@@ -20,7 +20,7 @@
 
     'author': "Harry",
     'category': 'Inventory',
-    'version': '0.2',
+    'version': '0.3',
 
     'depends': ['stock', 'purchase_stock'],
     'application': False,
