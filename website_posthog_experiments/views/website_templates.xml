@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="posthog_snippet" inherit_id="website.layout">
+        <xpath expr="//head" position="inside">
+            <t t-if="website.posthog_api_key and not editable">
+                <t t-set="posthog_ctx" t-value="website._get_posthog_frontend_context()"/>
+                <script id="posthog_config">
+                    (function () {
+                        var apiHost = '<t t-out="website.posthog_host or 'https://us.i.posthog.com'"/>'.replace(/\/$/, '');
+                        function initPostHog() {
+                            posthog.init('<t t-out="website.posthog_api_key"/>', {
+                                api_host: apiHost,
+                                <t t-if="posthog_ctx and posthog_ctx['bootstrap_json']">
+                                bootstrap: <t t-out="posthog_ctx['bootstrap_json']"/>,
+                                </t>
+                            });
+                            <t t-if="posthog_ctx and posthog_ctx['flag_key']">
+                            // registers the experiment exposure ($feature_flag_called)
+                            posthog.getFeatureFlag('<t t-out="posthog_ctx['flag_key']"/>');
+                            </t>
+                        }
+                        function loadPostHog() {
+                            var script = document.createElement('script');
+                            script.async = true;
+                            // PostHog Cloud serves the SDK from the assets domain;
+                            // self-hosted instances serve it from the app host
+                            script.src = apiHost.replace('.i.posthog.com', '-assets.i.posthog.com') + '/static/array.js';
+                            script.onload = initPostHog;
+                            document.head.appendChild(script);
+                        }
+                        <t t-if="website._allConsentsGranted()">
+                        loadPostHog();
+                        </t>
+                        <t t-else="">
+                        document.addEventListener('optionalCookiesAccepted', loadPostHog, {once: true});
+                        </t>
+                    })();
+                </script>
+            </t>
+        </xpath>
+    </template>
+</odoo>

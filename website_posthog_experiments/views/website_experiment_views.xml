@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="website_experiment_view_tree" model="ir.ui.view">
+        <field name="name">website.experiment.tree</field>
+        <field name="model">website.experiment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="flag_key"/>
+                <field name="base_page_id"/>
+                <field name="website_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="website_experiment_view_form" model="ir.ui.view">
+        <field name="name">website.experiment.form</field>
+        <field name="model">website.experiment</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_create_variant"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-copy">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Create Variant</span>
+                            </div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. Homepage hero test"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group name="experiment" string="Experiment">
+                            <field name="flag_key"/>
+                            <field name="base_page_id" options="{'no_create': True}"/>
+                            <field name="base_url"/>
+                            <field name="website_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group name="help" string="PostHog setup">
+                            <div class="text-muted col-lg-12">
+                                Create a multivariate feature flag in PostHog with the key
+                                above, then create an Experiment in PostHog using that flag.
+                                Visitors in the <code>control</code> variant see the base page;
+                                visitors in the variants below see the corresponding page,
+                                rendered under the base page URL.
+                            </div>
+                        </group>
+                    </group>
+                    <group string="Variants">
+                        <field name="variant_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="key" placeholder="test"/>
+                                <field name="page_id" options="{'no_create': True}"/>
+                                <field name="page_url" readonly="1"/>
+                                <field name="is_published" widget="boolean_toggle"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_website_experiment" model="ir.actions.act_window">
+        <field name="name">Experiments</field>
+        <field name="res_model">website.experiment</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first A/B experiment
+            </p>
+            <p>
+                An experiment serves different versions of a page to different
+                visitors, split by a PostHog feature flag. Pick a base page,
+                create a variant, and configure the matching experiment in
+                PostHog.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_website_experiment"
+              name="Experiments"
+              parent="website.menu_website_configuration"
+              action="action_website_experiment"
+              sequence="55"/>
+</odoo>
