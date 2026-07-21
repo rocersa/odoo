@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_website_experiment_user,website.experiment user,model_website_experiment,base.group_user,1,0,0,0
+access_website_experiment_designer,website.experiment designer,model_website_experiment,website.group_website_designer,1,1,1,1
+access_website_experiment_variant_user,website.experiment.variant user,model_website_experiment_variant,base.group_user,1,0,0,0
+access_website_experiment_variant_designer,website.experiment.variant designer,model_website_experiment_variant,website.group_website_designer,1,1,1,1

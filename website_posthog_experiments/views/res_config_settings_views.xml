@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.website.posthog</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <setting id="google_analytics_setting" position="after">
+                <setting id="posthog_setting"
+                         help="Run A/B experiments on website pages and track analytics with PostHog"
+                         documentation="https://posthog.com/docs/experiments">
+                    <field name="has_posthog"/>
+                    <div class="content-group" invisible="not has_posthog">
+                        <div class="row mt16">
+                            <label class="col-lg-3 o_light_label" string="Project API Key" for="posthog_api_key"/>
+                            <field name="posthog_api_key" placeholder="phc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                   required="has_posthog"/>
+                        </div>
+                        <div class="row mt16">
+                            <label class="col-lg-3 o_light_label" string="Host" for="posthog_host"/>
+                            <field name="posthog_host" placeholder="https://us.i.posthog.com"/>
+                        </div>
+                    </div>
+                    <div invisible="not has_posthog">
+                        <widget
+                            class="oe_link"
+                            name="documentation_link"
+                            path="https://posthog.com/docs/getting-started/install"
+                            label=" How to get my Project API Key"
+                            icon="oi oi-arrow-right"
+                        />
+                    </div>
+                </setting>
+            </setting>
+        </field>
+    </record>
+</odoo>
