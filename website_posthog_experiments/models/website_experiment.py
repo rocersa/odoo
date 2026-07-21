@@ -56,6 +56,10 @@ class WebsiteExperiment(models.Model):
             key = f'test-{index}'
         variant_page = self.base_page_id.copy({
             'name': f"{self.base_page_id.name} - {key}",
+            # keep the variant specific to the same website: editing it in
+            # the builder then writes directly to its view instead of COWing
+            # a generic view into a separate website-specific copy
+            'website_id': self.base_page_id.website_id.id,
         })
         variant_page.is_published = False
         self.env['website.experiment.variant'].create({
