@@ -1,7 +1,7 @@
 {
     "name": "Website PostHog Experiments",
     "summary": "A/B test website pages with PostHog experiments",
-    "version": "19.0.1.0.3",
+    "version": "19.0.1.0.4",
     "category": "Website",
     "author": "Rocersa",
     "license": "LGPL-3",

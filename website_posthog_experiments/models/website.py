@@ -5,7 +5,7 @@ import uuid
 import requests
 from markupsafe import Markup
 
-from odoo import fields, models
+from odoo import api, fields, models
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
