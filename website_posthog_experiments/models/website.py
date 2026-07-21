@@ -39,6 +39,27 @@ class Website(models.Model):
             request.posthog_new_distinct_id = distinct_id
         return distinct_id
 
+    @api.model
+    def _parse_posthog_flags(self, data):
+        """Normalize a PostHog `/flags` response to a {flag_key: value} dict.
+
+        Handles both the legacy `featureFlags` mapping and the current
+        `flags` object whose entries have `enabled` and `variant` fields.
+        Multivariate flags map to their variant key (string), boolean flags
+        to True/False, matching the legacy format.
+        """
+        if 'featureFlags' in data:
+            return data['featureFlags'] or {}
+        parsed = {}
+        for key, value in (data.get('flags') or {}).items():
+            if not isinstance(value, dict) or not value.get('enabled'):
+                parsed[key] = False
+            elif value.get('variant') is not None:
+                parsed[key] = value['variant']
+            else:
+                parsed[key] = True
+        return parsed
+
     def _get_posthog_flag_variant(self, request, flag_key):
         """Evaluate a PostHog feature flag for the current visitor.
 
@@ -67,7 +88,8 @@ class Website(models.Model):
                     timeout=POSTHOG_FLAGS_TIMEOUT,
                 )
                 response.raise_for_status()
-                flags.update(response.json().get('featureFlags') or {})
+                parsed = self._parse_posthog_flags(response.json())
+                flags.update(parsed)
             except Exception:
                 _logger.warning(
                     "PostHog flag %r: evaluation failed, serving control page",
@@ -77,8 +99,9 @@ class Website(models.Model):
             flags.setdefault(flag_key, None)
             request.session['posthog_flags'] = flags
             _logger.info(
-                "PostHog flag %r: evaluated to %r for distinct id %s",
-                flag_key, flags.get(flag_key), distinct_id)
+                "PostHog flag %r: evaluated to %r for distinct id %s "
+                "(flags returned: %s)",
+                flag_key, flags.get(flag_key), distinct_id, sorted(parsed))
         else:
             _logger.info(
                 "PostHog flag %r: session cache -> %r", flag_key, flags.get(flag_key))
