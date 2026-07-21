@@ -4,6 +4,7 @@ import time
 
 from odoo import api, models
 from odoo.addons.base.models.ir_http import EXTENSION_TO_WEB_MIMETYPES
+from odoo.fields import Domain
 
 from .website import (
     POSTHOG_DISTINCT_ID_COOKIE,
@@ -110,6 +111,19 @@ class WebsitePage(models.Model):
                     ._get_cached_template_info(self.view_id.key)['id']
             )
         ):
+            # follow COW: if editing the variant in the builder created a
+            # website-specific copy of its page/view, render that one
+            # (same URL, most specific page first, like `_get_page_info`)
+            cow_page = self.env['website.page'].sudo().search_fetch(
+                Domain('url', '=', variant_page.url)
+                & request.website.website_domain(),
+                ['view_id'], order='website_id asc', limit=1)
+            if cow_page and cow_page != variant_page:
+                _logger.info(
+                    "PostHog experiment: variant page %s resolved to "
+                    "website-specific page %s (view %s) after COW",
+                    variant_page.id, cow_page.id, cow_page.view_id.id)
+                variant_page = cow_page
             _, ext = os.path.splitext(request.httprequest.path)
             response = request.render(variant_page.view_id.id, {
                 'main_object': self,
