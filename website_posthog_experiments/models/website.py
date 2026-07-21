@@ -49,11 +49,17 @@ class Website(models.Model):
         """
         self.ensure_one()
         if not self.posthog_api_key:
+            _logger.info(
+                "PostHog flag %r: no API key configured on website %r, "
+                "serving control page", flag_key, self.name)
             return None
         flags = dict(request.session.get('posthog_flags') or {})
         if flag_key not in flags:
             distinct_id = self._get_posthog_distinct_id(request)
             host = (self.posthog_host or POSTHOG_DEFAULT_HOST).rstrip('/')
+            _logger.info(
+                "PostHog flag %r: evaluating for distinct id %s via %s",
+                flag_key, distinct_id, host)
             try:
                 response = requests.post(
                     f"{host}/flags?v=2",
@@ -64,11 +70,18 @@ class Website(models.Model):
                 flags.update(response.json().get('featureFlags') or {})
             except Exception:
                 _logger.warning(
-                    "PostHog flag evaluation failed, serving control page", exc_info=True)
+                    "PostHog flag %r: evaluation failed, serving control page",
+                    flag_key, exc_info=True)
                 return None
             # remember "flag not returned" too, so we don't re-call per page view
             flags.setdefault(flag_key, None)
             request.session['posthog_flags'] = flags
+            _logger.info(
+                "PostHog flag %r: evaluated to %r for distinct id %s",
+                flag_key, flags.get(flag_key), distinct_id)
+        else:
+            _logger.info(
+                "PostHog flag %r: session cache -> %r", flag_key, flags.get(flag_key))
         value = flags.get(flag_key)
         # multivariate flags return the variant key as a string; boolean flags
         # and missing flags are treated as "no variant" -> control

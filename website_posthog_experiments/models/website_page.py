@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 
@@ -8,6 +9,8 @@ from .website import (
     POSTHOG_DISTINCT_ID_COOKIE,
     POSTHOG_DISTINCT_ID_COOKIE_MAX_AGE,
 )
+
+_logger = logging.getLogger(__name__)
 
 
 class WebsitePage(models.Model):
@@ -26,19 +29,38 @@ class WebsitePage(models.Model):
         # never cache a page that is the base of an active experiment: the
         # variant to serve is decided per visitor
         if len(self) == 1 and self._get_active_posthog_experiment():
+            _logger.info(
+                "PostHog experiment: response cache disabled for %s",
+                request.httprequest.path)
             return False
         return super()._allow_to_use_cache(request)
 
     def _get_response_raw(self, request):
+        experiment = (
+            self._get_active_posthog_experiment()
+            if len(self) == 1 else
+            self.env['website.experiment']
+        )
+        if not experiment:
+            return super()._get_response_raw(request)
+
+        path = request.httprequest.path
         # website designers always get the control page, so the builder and
         # page previews are never affected by experiments
-        if (
-            len(self) == 1
-            and not request.env.user.has_group('website.group_website_designer')
-            and (experiment := self._get_active_posthog_experiment())
-            and (variant_value := request.website._get_posthog_flag_variant(
-                request, experiment.flag_key))
-        ):
+        if request.env.user.has_group('website.group_website_designer'):
+            _logger.info(
+                "PostHog experiment %r: %s visited by a website designer, "
+                "serving control page", experiment.name, path)
+            return super()._get_response_raw(request)
+
+        variant_value = request.website._get_posthog_flag_variant(
+            request, experiment.flag_key)
+        _logger.info(
+            "PostHog experiment %r: %s flag %r evaluated to %r",
+            experiment.name, path, experiment.flag_key, variant_value)
+
+        variant = None
+        if variant_value:
             request.posthog_experiment = {
                 'flag_key': experiment.flag_key,
                 'variant_value': variant_value,
@@ -46,12 +68,16 @@ class WebsitePage(models.Model):
             }
             variant = experiment.variant_ids.filtered(
                 lambda v: v.key == variant_value)[:1]
-            if variant:
-                response = self._render_posthog_variant(request, variant.page_id)
-            else:
-                # variant key known to PostHog but without a page (e.g.
-                # 'control') -> serve the base page, still tracked
-                response = super()._get_response_raw(request)
+            if not variant:
+                _logger.info(
+                    "PostHog experiment %r: no variant page registered for key "
+                    "%r, serving control page", experiment.name, variant_value)
+
+        if variant:
+            _logger.info(
+                "PostHog experiment %r: serving variant page %s (%s) under %s",
+                experiment.name, variant.page_id.id, variant.page_id.url, path)
+            response = self._render_posthog_variant(request, variant.page_id)
         else:
             response = super()._get_response_raw(request)
 
@@ -62,6 +88,9 @@ class WebsitePage(models.Model):
                 new_distinct_id,
                 max_age=POSTHOG_DISTINCT_ID_COOKIE_MAX_AGE,
             )
+            _logger.info(
+                "PostHog experiment %r: set distinct id cookie %s",
+                experiment.name, new_distinct_id)
         return response
 
     def _render_posthog_variant(self, request, variant_page):
@@ -87,4 +116,7 @@ class WebsitePage(models.Model):
             }, mimetype=EXTENSION_TO_WEB_MIMETYPES.get(ext, 'text/html'))
             response.time = time.time()
             return response
+        _logger.warning(
+            "PostHog experiment: base page %s (%s) failed the accessibility "
+            "gate, variant not rendered", self.id, request.httprequest.path)
         return None
