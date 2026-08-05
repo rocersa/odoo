@@ -24,6 +24,7 @@ class ProductPricelist(models.Model):
         rule applies. Works on product.template and product.product records.
         """
         currency = self.currency_id or self.env.company.currency_id
+        company = self.env.company
         prices = self._get_products_price(products, 1.0, date=date) if self else {}
         result = {}
         for product in products:
@@ -33,7 +34,9 @@ class ProductPricelist(models.Model):
                 price = product.lst_price
             else:
                 price = product.list_price
-            taxes = product.taxes_id
+            # taxes_id exposes the taxes of all ticked companies (record rules
+            # use allowed companies); only the active company's taxes apply.
+            taxes = product.taxes_id.filtered(lambda t: t.company_id == company)
             if taxes:
                 price = taxes.compute_all(
                     price, currency=currency, quantity=1.0, product=product,
