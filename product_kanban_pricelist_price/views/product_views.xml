@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_template_kanban_view" model="ir.ui.view">
+        <field name="name">product.template.kanban.pricelist.price</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_kanban_view"/>
+        <field name="arch" type="xml">
+            <field name="currency_id" position="after">
+                <field name="pricelist_currency_id"/>
+            </field>
+            <xpath expr="//field[@name='list_price']" position="replace">
+                <field name="pricelist_price" widget="monetary" options="{'currency_field': 'pricelist_currency_id', 'field_digits': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_product_kanban_view" model="ir.ui.view">
+        <field name="name">product.product.kanban.pricelist.price</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_kanban_view"/>
+        <field name="arch" type="xml">
+            <field name="activity_state" position="after">
+                <field name="pricelist_currency_id"/>
+            </field>
+            <xpath expr="//field[@name='lst_price']" position="replace">
+                <field name="pricelist_price" widget="monetary" options="{'currency_field': 'pricelist_currency_id', 'field_digits': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
