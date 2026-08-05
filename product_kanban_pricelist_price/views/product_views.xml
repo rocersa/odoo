@@ -9,8 +9,8 @@
             <field name="currency_id" position="after">
                 <field name="pricelist_currency_id"/>
             </field>
-            <xpath expr="//field[@name='list_price']" position="replace">
-                <field name="pricelist_price" widget="monetary" options="{'currency_field': 'pricelist_currency_id', 'field_digits': True}"/>
+            <xpath expr="//span[field[@name='list_price']]" position="replace">
+                <span>Price (incl. GST): <field name="pricelist_price" widget="monetary" options="{'currency_field': 'pricelist_currency_id', 'field_digits': True}"/></span>
             </xpath>
         </field>
     </record>
@@ -23,8 +23,8 @@
             <field name="activity_state" position="after">
                 <field name="pricelist_currency_id"/>
             </field>
-            <xpath expr="//field[@name='lst_price']" position="replace">
-                <field name="pricelist_price" widget="monetary" options="{'currency_field': 'pricelist_currency_id', 'field_digits': True}"/>
+            <xpath expr="//span[field[@name='lst_price']]" position="replace">
+                <span>Price (incl. GST): <field name="pricelist_price" widget="monetary" options="{'currency_field': 'pricelist_currency_id', 'field_digits': True}"/></span>
             </xpath>
         </field>
     </record>
