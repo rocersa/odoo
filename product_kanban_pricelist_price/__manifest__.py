@@ -7,7 +7,7 @@ cards with the unit price computed from the company's pricelist (including
 customer taxes, i.e. GST), so users can check real sales prices without
 creating dummy quotes.
 """,
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Sales',
     'author': 'Rocersa',
     'license': 'LGPL-3',

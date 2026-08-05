@@ -35,8 +35,9 @@ class ProductPricelist(models.Model):
             else:
                 price = product.list_price
             # taxes_id exposes the taxes of all ticked companies (record rules
-            # use allowed companies); only the active company's taxes apply.
-            taxes = product.taxes_id.filtered(lambda t: t.company_id == company)
+            # use allowed companies); keep only the active company's, walking
+            # up the company hierarchy like core does for product tax strings.
+            taxes = product.taxes_id._filter_taxes_by_company(company)
             if taxes:
                 price = taxes.compute_all(
                     price, currency=currency, quantity=1.0, product=product,
