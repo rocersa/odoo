@@ -42,6 +42,7 @@ _PNG_1X1 = (
 READ_TOOL_NAMES = {
     "list_models",
     "get_record",
+    "read_field",
     "get_fields",
     "search_records",
     "aggregate_records",
@@ -352,6 +353,84 @@ class TestMcpReadTools(common.HttpCase):
             schema["properties"]["limit"]["description"],
             "Defaults to 100, capped at 100.",
         )
+
+    # ------------------------------------------------------------------
+    # read_field
+    # ------------------------------------------------------------------
+    def test_read_field_pages_full_value(self):
+        """read_field returns raw slices with explicit paging metadata."""
+        long_text = "0123456789" * 500  # 5000 chars
+        partner = self.env["res.partner"].create(
+            {"name": "Long Comment", "comment": long_text}
+        )
+
+        first = self._call_tool(
+            "read_field",
+            {
+                "model": "res.partner",
+                "record_id": partner.id,
+                "field": "comment",
+                "length": 2000,
+            },
+        )
+        self.assertNotIn("isError", first, msg=first)
+        structured = first["structuredContent"]
+        self.assertEqual(structured["total"], 5000)
+        self.assertEqual(structured["offset"], 0)
+        self.assertEqual(structured["returned"], 2000)
+        self.assertTrue(structured["has_more"])
+        self.assertEqual(structured["value"], long_text[:2000])
+        self.assertIn(long_text[:2000], first["content"][0]["text"])
+
+        second = self._call_tool(
+            "read_field",
+            {
+                "model": "res.partner",
+                "record_id": partner.id,
+                "field": "comment",
+                "offset": 2000,
+                "length": 4000,
+            },
+        )
+        structured = second["structuredContent"]
+        self.assertEqual(structured["returned"], 3000)
+        self.assertFalse(structured["has_more"])
+        self.assertEqual(structured["value"], long_text[2000:])
+
+    def test_read_field_rejects_non_text_field(self):
+        """read_field refuses non char/text/html fields with a clean error."""
+        partner = self.env["res.partner"].create({"name": "Typed"})
+        result = self._call_tool(
+            "read_field",
+            {"model": "res.partner", "record_id": partner.id, "field": "id"},
+        )
+        self.assertTrue(result["isError"], msg=result)
+        self.assertIn("char/text/html", result["content"][0]["text"])
+
+    def test_read_field_unknown_field_is_clean_error(self):
+        """read_field on an unknown field name is a clean isError."""
+        partner = self.env["res.partner"].create({"name": "No Field"})
+        result = self._call_tool(
+            "read_field",
+            {
+                "model": "res.partner",
+                "record_id": partner.id,
+                "field": "no_such_field",
+            },
+        )
+        self.assertTrue(result["isError"], msg=result)
+        self.assertIn("Unknown field", result["content"][0]["text"])
+
+    def test_read_field_length_description_carries_live_values(self):
+        """tools/list fills read_field's length arg with the configured bounds."""
+        result = self._rpc_result("tools/list")
+        tools = {tool["name"]: tool for tool in result["tools"]}
+        description = tools["read_field"]["inputSchema"]["properties"]["length"][
+            "description"
+        ]
+        self.assertNotIn("%(default)s", description)
+        self.assertIn("20000", description)
+        self.assertIn("100000", description)
 
     def test_get_record_returns_smart_defaults(self):
         """get_record returns a single record with smart-default metadata."""

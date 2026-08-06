@@ -1,8 +1,9 @@
 """Read-side MCP tools.
 
 Contributes the read tools to :class:`McpMixin` via ``_inherit = 'mcp.mixin'``:
-``list_models``, ``get_record``, ``get_fields``, ``search_records``,
-``aggregate_records``, ``list_resource_templates`` and ``get_current_context``.
+``list_models``, ``get_record``, ``read_field``, ``get_fields``,
+``search_records``, ``aggregate_records``, ``list_resource_templates`` and
+``get_current_context``.
 The LLM-friendly text output reuses the
 ``tools.formatters`` / ``tools.uri_schema`` / ``tools.smart_fields`` helpers.
 
@@ -54,6 +55,13 @@ MAX_OFFSET_PAGES = 1000
 # shown collection costs one extra name-resolution read, and larger ones just
 # collapse to a count plus a search hint.
 DEFAULT_MAX_RELATED_ITEMS = 3
+
+# ``read_field`` page-size fallbacks (live values:
+# ``mcp_server.read_field_default_length`` / ``mcp_server.read_field_max_length``).
+# Text slices are cheap reads, so these sit far above the record-list limits;
+# the max still bounds the size of a single response.
+DEFAULT_READ_FIELD_LENGTH = 20000
+MAX_READ_FIELD_LENGTH = 100000
 
 # ``fields`` sentinel: explicit request for every field on the model.
 _ALL_FIELDS_SENTINEL = "__all__"
@@ -155,22 +163,53 @@ class McpToolsRead(models.AbstractModel):
         return min(default_limit, max_limit), max_limit
 
     def _mcp_live_input_schema(self, schema):
-        """Return ``schema`` with live limit values filled into its ``limit`` arg.
+        """Return ``schema`` with live tuning values filled into its arguments.
 
-        The advertised ``limit`` description carries ``%(default)s``/``%(max)s``
-        placeholders so ``tools/list`` can reflect the configured default/maximum
-        record limits. Returns the schema unchanged when it has no such argument;
-        otherwise returns a shallow copy (the cached schema is never mutated).
+        Argument descriptions may carry ``%(default)s``/``%(max)s``
+        placeholders so ``tools/list`` can reflect the configured values. Each
+        fillable argument names its own bounds provider below (``limit`` uses
+        the record-list bounds, ``length`` the ``read_field`` page-size
+        bounds). Arguments without a placeholder are left untouched, and the
+        cached schema is never mutated.
         """
+        bounds_providers = {
+            "limit": self._limit_bounds,
+            "length": self._read_field_length_bounds,
+        }
         props = schema.get("properties", {})
-        limit = props.get("limit")
-        description = limit.get("description", "") if isinstance(limit, dict) else ""
-        if "%(default)s" not in description:
+        new_props = dict(props)
+        changed = False
+        for arg_name, bounds in bounds_providers.items():
+            prop = props.get(arg_name)
+            description = prop.get("description", "") if isinstance(prop, dict) else ""
+            if "%(default)s" not in description:
+                continue
+            default, maximum = bounds()
+            filled = description % {"default": default, "max": maximum}
+            new_props[arg_name] = {**prop, "description": filled}
+            changed = True
+        if not changed:
             return schema
-        default_limit, max_limit = self._limit_bounds()
-        filled = description % {"default": default_limit, "max": max_limit}
-        new_limit = {**limit, "description": filled}
-        return {**schema, "properties": {**props, "limit": new_limit}}
+        return {**schema, "properties": new_props}
+
+    def _read_field_length_bounds(self):
+        """Effective ``(default, max)`` page length for ``read_field``.
+
+        Mirrors :meth:`_limit_bounds`: live config with module-default
+        fallback, a misconfigured 0/negative falls back to the defaults, and
+        the default is clamped to the max.
+        """
+        default_length = self._mcp_int_config(
+            "mcp_server.read_field_default_length", DEFAULT_READ_FIELD_LENGTH
+        )
+        max_length = self._mcp_int_config(
+            "mcp_server.read_field_max_length", MAX_READ_FIELD_LENGTH
+        )
+        if default_length <= 0:
+            default_length = DEFAULT_READ_FIELD_LENGTH
+        if max_length <= 0:
+            max_length = MAX_READ_FIELD_LENGTH
+        return min(default_length, max_length), max_length
 
     @staticmethod
     def _coerce_domain(domain):
@@ -516,6 +555,132 @@ class McpToolsRead(models.AbstractModel):
         except (AccessError, UserError):
             return False
         return True
+
+    # ------------------------------------------------------------------
+    # read_field
+    # ------------------------------------------------------------------
+    @mcp_tool(
+        name="read_field",
+        title="Read Field",
+        description=(
+            "Read the raw value of a single text-like field (char, text or "
+            "html) on one record, paged with 'offset' and 'length'. Intended "
+            "for long values (e.g. website page or view arch) that get_record "
+            "truncates for display."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string",
+                    "description": "Technical model name (e.g. 'ir.ui.view').",
+                },
+                "record_id": {
+                    "type": "integer",
+                    "description": "The record ID to read from.",
+                },
+                "field": {
+                    "type": "string",
+                    "description": "Field name (must be char, text or html).",
+                },
+                "offset": {
+                    "type": ["integer", "null"],
+                    "description": "Start character offset (default 0).",
+                },
+                "length": {
+                    "type": ["integer", "null"],
+                    "description": (
+                        "Characters to return (default %(default)s, max "
+                        "%(max)s). Re-call with offset += returned chars "
+                        "while has_more is true to page through the value."
+                    ),
+                },
+            },
+            "required": ["model", "record_id", "field"],
+            "additionalProperties": False,
+        },
+        operation="read",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=False,
+    )
+    @api.model
+    def read_field(self, model, record_id, field, offset=0, length=None):
+        """Read a slice of one text-like field, with explicit paging metadata."""
+        model_rs = self._resolve_model(model)
+        self._check_op(model, "read")
+
+        field_obj = model_rs._fields.get(field)
+        if field_obj is None:
+            raise UserError(
+                _(
+                    "Unknown field '%(field)s' on model '%(model)s'.",
+                    field=field,
+                    model=model,
+                )
+            )
+        if field_obj.type not in ("char", "text", "html"):
+            raise UserError(
+                _(
+                    "read_field supports char/text/html fields; '%(field)s' "
+                    "on '%(model)s' is of type '%(type)s'.",
+                    field=field,
+                    model=model,
+                    type=field_obj.type,
+                )
+            )
+
+        record_rs = self._browse_record_or_raise(model, model_rs, record_id)
+        # Runs as the calling user -> ORM enforces read ACLs / record rules.
+        value = str(record_rs.read([field])[0].get(field) or "")
+
+        try:
+            offset = max(0, int(offset or 0))
+        except (TypeError, ValueError):
+            raise UserError(_("'offset' must be an integer.")) from None
+        default_length, max_length = self._read_field_length_bounds()
+        if length is None:
+            length = default_length
+        try:
+            length = int(length)
+        except (TypeError, ValueError):
+            raise UserError(_("'length' must be an integer.")) from None
+        if length <= 0:
+            raise UserError(_("'length' must be positive."))
+        length = min(length, max_length)
+
+        total = len(value)
+        chunk = value[offset : offset + length]
+        has_more = offset + len(chunk) < total
+
+        lines = [
+            "=" * 60,
+            _("Field: %(model)s/%(id)s %(field)s", model=model, id=record_id, field=field),
+            "=" * 60,
+            _("Total length: %s chars", total),
+            _("Showing: chars %(start)s-%(end)s", start=offset, end=offset + len(chunk)),
+        ]
+        if has_more:
+            lines.append(
+                _("More available: re-call with offset=%s", offset + len(chunk))
+            )
+        lines.append("")
+        lines.append(chunk)
+
+        return _tool_result(
+            "\n".join(lines),
+            {
+                "model": model,
+                "record_id": int(record_id),
+                "field": field,
+                "total": total,
+                "offset": offset,
+                "returned": len(chunk),
+                "has_more": has_more,
+                "value": chunk,
+            },
+        )
 
     # ------------------------------------------------------------------
     # get_fields
