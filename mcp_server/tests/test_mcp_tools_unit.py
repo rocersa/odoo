@@ -248,6 +248,24 @@ class TestDatasetFormatter(common.TransactionCase):
         self.assertIn("Page 1 of 3", text)
         self.assertIn("Showing records 1-2 of 5", text)
 
+    def test_search_result_summary_always_shows_id(self):
+        """The id is the discovery path to get_record -- never name-only."""
+        fmt = DatasetFormatter("res.partner")
+        rows = [{"id": 7, "display_name": "ACME"}, {"id": 9, "name": "Globex"}]
+        text = fmt.format_search_results(rows, fields=["display_name"])
+        self.assertIn("ACME (ID: 7)", text)
+        self.assertIn("Globex (ID: 9)", text)
+
+    def test_explicit_fields_render_inline_without_count_cap(self):
+        """An explicit field list renders fully, even beyond five fields."""
+        fmt = DatasetFormatter("res.partner")
+        row = {"id": 3, "name": "ACME"}
+        fields = [f"field_{i}" for i in range(7)]
+        row.update({f: f"value_{i}" for i, f in enumerate(fields)})
+        text = fmt.format_search_results([row], fields=["name"] + fields)
+        for i, field in enumerate(fields):
+            self.assertIn(f"{field}: value_{i}", text)
+
 
 @tagged("much_unit", "post_install", "-at_install")
 class TestUriSchema(common.TransactionCase):

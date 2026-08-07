@@ -338,7 +338,12 @@ class RecordFormatter:
         ]
 
     def _get_record_summary(self, record: Dict[str, Any]) -> str:
-        """Get a one-line summary of a record."""
+        """Get a one-line summary of a record.
+
+        The record id is always included: search results are the discovery
+        path to follow-up get_record/update_record calls, so a summary that
+        shows only the name strands the caller without the id it needs.
+        """
         summary_fields = [
             "display_name",
             "name",
@@ -353,7 +358,7 @@ class RecordFormatter:
                 if isinstance(value, (list, tuple)) and len(value) == 2:
                     return f"{value[1]} (ID: {value[0]})"
                 elif isinstance(value, str):
-                    return value
+                    return f"{value} (ID: {record.get('id', 'Unknown')})"
 
         return f"ID: {record.get('id', 'Unknown')}"
 
@@ -453,8 +458,11 @@ class DatasetFormatter:
                 idx = offset + idx
             lines.append(f"[{idx}] {self.record_formatter._get_record_summary(record)}")
 
-            # Add selected field values if specific fields were requested
-            if fields and len(fields) <= 5:  # Only show inline for small field sets
+            # Add selected field values when specific fields were requested.
+            # No count cap: an explicit field list is a deliberate choice, so
+            # every requested field renders -- silently dropping fields above
+            # an arbitrary cap collapses the output to name-only lines.
+            if fields:
                 for field in fields:
                     if field in record and field not in (
                         "id",
