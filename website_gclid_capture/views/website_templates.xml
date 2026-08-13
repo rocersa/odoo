@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- First-party gclid attribution cookie (Google Ads).
+
+         Written on the landing page only: the ?gclid= query param is appended
+         by Google Ads to the ad-click destination URL, so it is only present
+         on the first page of the session. On direct visits (no gclid param)
+         the existing cookie is left intact (last-non-direct-click attribution).
+
+         G6 (consent) is deferred to roadmap.md#cookie-compliance-investigation
+         and must be resolved before this ships to production. The current
+         implementation writes immediately on landing; a gated variant would
+         need to stash the value in sessionStorage and write it on the
+         optionalCookiesAccepted event (mirroring website_posthog_experiments),
+         because by the time consent is granted the URL param is gone. -->
+    <template id="gclid_capture_snippet" inherit_id="website.layout">
+        <xpath expr="//head" position="inside">
+            <t t-if="not editable">
+                <script id="gclid_capture">
+                    (function () {
+                        var gclid = new URLSearchParams(location.search).get('gclid');
+                        if (gclid &amp;&amp; /^[A-Za-z0-9_-]{1,100}$/.test(gclid)) {
+                            var apex = location.hostname.replace(/^www\./, '');
+                            // Host-only cookie when there is no dot (localhost/IP);
+                            // Domain=apex otherwise so the products subdomain can read it.
+                            var domain = apex.includes('.') ? '; domain=' + apex : '';
+                            document.cookie = 'gclid=' + gclid +
+                                '; path=/' + domain +
+                                '; max-age=7776000; samesite=lax; secure';
+                        }
+                    })();
+                </script>
+            </t>
+        </xpath>
+    </template>
+</odoo>
