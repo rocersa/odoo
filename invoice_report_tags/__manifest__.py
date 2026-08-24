@@ -25,7 +25,7 @@
 
     'author': "Harry",
     'category': 'Accounting/Reporting',
-    'version': '0.7',
+    'version': '0.8',
 
     'depends': ['account', 'sale', 'crm'],
     'installable': True,

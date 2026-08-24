@@ -27,7 +27,8 @@ class RocersaInvoiceReport(models.Model):
         'crm.tag', string='Sale Type',
         related='move_id.sale_type_ids', compute_sudo=True)
     amount_total = fields.Monetary(
-        string='Total', readonly=True, currency_field='currency_id')
+        string='Total', readonly=True, currency_field='currency_id',
+        aggregator='avg')
     amount_untaxed = fields.Monetary(
         string='Untaxed Amount', readonly=True, currency_field='currency_id')
     invoice_date = fields.Date(string='Invoice Date', readonly=True)
