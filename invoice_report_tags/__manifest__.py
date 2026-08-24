@@ -25,11 +25,13 @@
 
     'author': "Harry",
     'category': 'Accounting/Reporting',
-    'version': '0.1',
+    'version': '0.2',
 
     'depends': ['account', 'sale', 'crm'],
     'installable': True,
     'application': False,
     'license': 'AGPL-3',
-    'data': [],
+    'data': [
+        'views/account_invoice_report_views.xml',
+    ],
 }
