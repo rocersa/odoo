@@ -14,10 +14,16 @@
 
         - **Customer Type** — the invoice customer's partner tags
           (``res.partner.category``), via a related field.
-        - **Sale Type** — the sale order's product-type tags (``crm.tag``),
-          resolved through the sale order's Invoices smart button
-          (``sale.order.invoice_ids``) and filtered to exclude the
-          workflow/status tags that share the same field.
+        - **Sale Type** — what was sold, taken from the source sales order's
+          ``crm.tag`` values via ``account.move.line.sale_line_ids``. That
+          field also carries fulfilment status, pickup location (the pickup
+          cage) and per-shipment container codes, so sale types are matched
+          against an explicit allowlist in ``models/account_invoice_report.py``.
+
+        Reported at invoice level via ``rocersa.invoice.report`` (one row per
+        invoice), so the pivot's Average is the true average invoice value.
+        The standard ``account.invoice.report`` is line-level, where an
+        average would be average unit price instead.
 
         Requested by David Bird (2026-08-23) to self-serve average invoice
         value broken down by what was sold and who bought it.
@@ -25,7 +31,7 @@
 
     'author': "Harry",
     'category': 'Accounting/Reporting',
-    'version': '0.8',
+    'version': '0.9',
 
     'depends': ['account', 'sale', 'crm'],
     'installable': True,
