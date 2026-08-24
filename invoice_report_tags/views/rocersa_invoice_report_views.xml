@@ -9,7 +9,7 @@
             <pivot string="Invoice Value Analysis">
                 <field name="customer_type_ids" type="col"/>
                 <field name="sale_type_ids" type="col"/>
-                <field name="amount_total" type="measure"/>
+                <field name="amount_average" type="measure"/>
             </pivot>
         </field>
     </record>

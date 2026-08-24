@@ -27,8 +27,12 @@ class RocersaInvoiceReport(models.Model):
         'crm.tag', string='Sale Type',
         related='move_id.sale_type_ids', compute_sudo=True)
     amount_total = fields.Monetary(
-        string='Total', readonly=True, currency_field='currency_id',
-        aggregator='avg')
+        string='Total Invoiced', readonly=True, currency_field='currency_id')
+    amount_average = fields.Monetary(
+        string='Average Invoice Value', readonly=True,
+        currency_field='currency_id', aggregator='avg',
+        help="Same value as Total Invoiced, but aggregated as an average "
+             "instead of a sum: the average value of one invoice.")
     amount_untaxed = fields.Monetary(
         string='Untaxed Amount', readonly=True, currency_field='currency_id')
     invoice_date = fields.Date(string='Invoice Date', readonly=True)
@@ -46,6 +50,7 @@ class RocersaInvoiceReport(models.Model):
                 move.name AS name,
                 move.partner_id AS partner_id,
                 move.amount_total AS amount_total,
+                move.amount_total AS amount_average,
                 move.amount_untaxed AS amount_untaxed,
                 move.invoice_date AS invoice_date,
                 move.move_type AS move_type,
