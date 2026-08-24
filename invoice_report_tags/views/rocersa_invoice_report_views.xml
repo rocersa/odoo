@@ -22,7 +22,7 @@
                 <filter string="Posted" name="posted" domain="[('state','=','posted')]"/>
                 <filter string="Customer Invoices" name="out_invoice" domain="[('move_type','=','out_invoice')]"/>
                 <separator/>
-                <group expand="0">
+                <group>
                     <filter string="Customer Type" name="customer_type" context="{'group_by':'customer_type_ids'}"/>
                     <filter string="Sale Type" name="sale_type" context="{'group_by':'sale_type_ids'}"/>
                     <filter string="Invoice Date" name="invoice_date_month" context="{'group_by':'invoice_date:month'}"/>
