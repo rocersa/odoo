@@ -25,7 +25,7 @@
 
     'author': "Harry",
     'category': 'Accounting/Reporting',
-    'version': '0.2',
+    'version': '0.3',
 
     'depends': ['account', 'sale', 'crm'],
     'installable': True,
@@ -33,5 +33,6 @@
     'license': 'AGPL-3',
     'data': [
         'views/account_invoice_report_views.xml',
+        'views/rocersa_invoice_report_views.xml',
     ],
 }

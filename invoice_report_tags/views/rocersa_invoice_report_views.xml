@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Invoice-level report: average invoice value by customer/sale type. -->
+
+    <record id="view_rocersa_invoice_report_pivot" model="ir.ui.view">
+        <field name="name">rocersa.invoice.report.pivot</field>
+        <field name="model">rocersa.invoice.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Invoice Value Analysis">
+                <field name="customer_type_ids" type="col"/>
+                <field name="sale_type_ids" type="col"/>
+                <field name="amount_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_rocersa_invoice_report_search" model="ir.ui.view">
+        <field name="name">rocersa.invoice.report.search</field>
+        <field name="model">rocersa.invoice.report</field>
+        <field name="arch" type="xml">
+            <search string="Invoice Value Analysis">
+                <filter string="Posted" name="posted" domain="[('state','=','posted')]"/>
+                <filter string="Customer Invoices" name="out_invoice" domain="[('move_type','=','out_invoice')]"/>
+                <separator/>
+                <group expand="0">
+                    <filter string="Customer Type" name="customer_type" context="{'group_by':'customer_type_ids'}"/>
+                    <filter string="Sale Type" name="sale_type" context="{'group_by':'sale_type_ids'}"/>
+                    <filter string="Invoice Date" name="invoice_date_month" context="{'group_by':'invoice_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_rocersa_invoice_report" model="ir.actions.act_window">
+        <field name="name">Invoice Value Analysis</field>
+        <field name="res_model">rocersa.invoice.report</field>
+        <field name="view_mode">pivot</field>
+        <field name="context">{'search_default_posted': 1, 'search_default_out_invoice': 1}</field>
+        <field name="search_view_id" ref="view_rocersa_invoice_report_search"/>
+    </record>
+
+    <menuitem id="menu_rocersa_invoice_report"
+        name="Invoice Value Analysis"
+        action="action_rocersa_invoice_report"
+        parent="account.menu_finance_reports"
+        sequence="6"/>
+</odoo>
