@@ -5,28 +5,37 @@ from odoo import api, fields, models
 # product-type ("sale type") tags. Filtered out so "Sale Type" only shows
 # what was sold (Retaining wall, Fence, Cage, planters, steps, edging, ...),
 # not fulfilment status (Paid, booked, ready, yard, done, collected, ...).
-# Kept as a module constant so it's tracked in-repo and easy to update.
 SALE_STATUS_TAGS = frozenset({
     'Paid', 'Payment email', 'HOLD', 'booked', 'collected', 'done',
     'pic reminder', 'ready', 'yard',
 })
 
 
-def sale_type_tags_for_moves(env, moves):
-    """Return ``{move_id: crm.tag recordset}`` of product-type tags per invoice.
+class AccountMove(models.Model):
+    """Store the source sale order's product-type tags on the invoice.
 
-    Resolves the invoice's sale order(s) through the sale order's "Invoices"
-    smart button (``sale.order.invoice_ids``) and keeps only the product-type
-    tags, dropping the workflow/status tags that pollute ``crm.tag``.
+    ``sale_type_ids`` is a stored computed field so report models can group a
+    pivot by it: Odoo only groups by a stored field, or by a related field
+    whose path is many2one-only. The invoice -> sale order link goes through
+    ``line_ids`` (one2many) and ``sale_line_ids`` (many2many), which can't be
+    traversed for grouping, so we materialise the tags here on ``account.move``.
     """
-    orders = env['sale.order'].search([('invoice_ids', 'in', moves.ids)])
-    empty = env['crm.tag']
-    move_tags = {}
-    for order in orders:
-        tags = order.tag_ids.filtered(lambda t: t.name not in SALE_STATUS_TAGS)
-        for move in order.invoice_ids:
-            move_tags[move.id] = move_tags.get(move.id, empty) | tags
-    return move_tags
+    _inherit = 'account.move'
+
+    sale_type_ids = fields.Many2many(
+        'crm.tag', string='Sale Type',
+        compute='_compute_sale_type_ids', store=True)
+
+    @api.depends('line_ids.sale_line_ids.order_id.tag_ids')
+    def _compute_sale_type_ids(self):
+        empty = self.env['crm.tag']
+        for move in self:
+            tags = empty
+            for line in move.line_ids:
+                for sale_line in line.sale_line_ids:
+                    tags |= sale_line.order_id.tag_ids
+            move.sale_type_ids = tags.filtered(
+                lambda t: t.name not in SALE_STATUS_TAGS)
 
 
 class AccountInvoiceReport(models.Model):
@@ -36,26 +45,12 @@ class AccountInvoiceReport(models.Model):
         'res.partner.category',
         string='Customer Type',
         related='partner_id.category_id',
+        compute_sudo=True,
     )
 
     sale_type_ids = fields.Many2many(
         'crm.tag',
         string='Sale Type',
-        compute='_compute_sale_type_ids',
-        search='_search_sale_type_ids',
+        related='move_id.sale_type_ids',
+        compute_sudo=True,
     )
-
-    @api.depends('move_id')
-    def _compute_sale_type_ids(self):
-        move_tags = sale_type_tags_for_moves(self.env, self.mapped('move_id'))
-        empty = self.env['crm.tag']
-        for rec in self:
-            rec.sale_type_ids = move_tags.get(rec.move_id.id, empty)
-
-    def _search_sale_type_ids(self, operator, value):
-        if operator in ('=', '!='):
-            operator = 'in' if operator == '=' else 'not in'
-        if operator not in ('in', 'not in'):
-            return [('id', 'in', [])]
-        orders = self.env['sale.order'].search([('tag_ids', operator, value)])
-        return [('move_id', operator, orders.invoice_ids.ids)]

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import fields, models
 from odoo.tools.sql import SQL
-
-from .account_invoice_report import sale_type_tags_for_moves
 
 
 class RocersaInvoiceReport(models.Model):
@@ -24,10 +22,10 @@ class RocersaInvoiceReport(models.Model):
     partner_id = fields.Many2one('res.partner', string='Customer', readonly=True)
     customer_type_ids = fields.Many2many(
         'res.partner.category', string='Customer Type',
-        related='partner_id.category_id')
+        related='partner_id.category_id', compute_sudo=True)
     sale_type_ids = fields.Many2many(
         'crm.tag', string='Sale Type',
-        compute='_compute_sale_type_ids', search='_search_sale_type_ids')
+        related='move_id.sale_type_ids', compute_sudo=True)
     amount_total = fields.Monetary(
         string='Total', readonly=True, currency_field='currency_id')
     amount_untaxed = fields.Monetary(
@@ -56,18 +54,3 @@ class RocersaInvoiceReport(models.Model):
             FROM account_move move
             WHERE move.move_type IN ('out_invoice', 'out_refund')
         """)
-
-    @api.depends('move_id')
-    def _compute_sale_type_ids(self):
-        move_tags = sale_type_tags_for_moves(self.env, self.mapped('move_id'))
-        empty = self.env['crm.tag']
-        for rec in self:
-            rec.sale_type_ids = move_tags.get(rec.move_id.id, empty)
-
-    def _search_sale_type_ids(self, operator, value):
-        if operator in ('=', '!='):
-            operator = 'in' if operator == '=' else 'not in'
-        if operator not in ('in', 'not in'):
-            return [('id', 'in', [])]
-        orders = self.env['sale.order'].search([('tag_ids', operator, value)])
-        return [('move_id', operator, orders.invoice_ids.ids)]
