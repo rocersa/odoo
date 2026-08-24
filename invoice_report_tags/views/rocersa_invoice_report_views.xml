@@ -42,6 +42,6 @@
     <menuitem id="menu_rocersa_invoice_report"
         name="Invoice Value Analysis"
         action="action_rocersa_invoice_report"
-        parent="account.menu_finance_reports"
-        sequence="6"/>
+        parent="account.account_reports_management_menu"
+        sequence="2"/>
 </odoo>
