@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add Customer Type / Sale Type to the Invoice Analysis "Group By" menu. -->
+    <record id="view_account_invoice_report_search_invoice_report_tags" model="ir.ui.view">
+        <field name="name">account.invoice.report.search.invoice_report_tags</field>
+        <field name="model">account.invoice.report</field>
+        <field name="inherit_id" ref="account.view_account_invoice_report_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='category_product']" position="after">
+                <filter string="Customer Type" name="customer_type" context="{'group_by':'customer_type_ids'}"/>
+                <filter string="Sale Type" name="sale_type" context="{'group_by':'sale_type_ids'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
