@@ -25,7 +25,7 @@
 
     'author': "Harry",
     'category': 'Rocersa/Brand',
-    'version': '0.3',
+    'version': '0.4',
 
     'depends': ['web'],
     'installable': True,
@@ -34,6 +34,6 @@
     'data': [
         'views/report_templates.xml',
         'views/report_assets.xml',
-        'data/company_colors.xml',
     ],
+    'post_init_hook': 'post_init_hook',
 }
