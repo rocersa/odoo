@@ -55,7 +55,13 @@ body,
 
 /* Address alignment (standard §9): company address right, customer address
  * left. address_layout's own column classes can still apply, so force both. */
-[name='company_address'],
+[name='company_address'] {
+    text-align: right !important;
+    /* The striped header is a flex row and the address block is a w-50 item,
+     * so it stops short of the edge. Grow it to fill, then text-align right. */
+    flex-grow: 1 !important;
+}
+
 [name='company_address'] * {
     text-align: right !important;
 }

@@ -25,7 +25,7 @@
 
     'author': "Harry",
     'category': 'Rocersa/Brand',
-    'version': '0.6',
+    'version': '0.7',
 
     'depends': ['web'],
     'installable': True,
