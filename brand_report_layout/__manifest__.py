@@ -25,14 +25,15 @@
 
     'author': "Harry",
     'category': 'Rocersa/Brand',
-    'version': '0.7',
+    'version': '0.8',
 
-    'depends': ['web'],
+    'depends': ['web', 'account'],
     'installable': True,
     'application': False,
     'license': 'AGPL-3',
     'data': [
         'views/report_templates.xml',
+        'views/report_invoice.xml',
         'views/report_assets.xml',
     ],
     'post_init_hook': 'post_init_hook',

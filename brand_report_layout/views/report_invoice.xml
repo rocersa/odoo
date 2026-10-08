@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Invoice body (docs/brand/design-standard.md §9).
+
+        Put the payment communication on the LEFT, on the same band as the
+        totals (which float right in #right-elements). Odoo renders it below the
+        totals by default (in #payment_term).
+
+        The original block is removed BEFORE the new one is inserted, otherwise
+        the remove-xpath would also match the copy.
+    -->
+    <template id="report_invoice_document_brand"
+              inherit_id="account.report_invoice_document"
+              name="Invoice — payment communication left of totals">
+
+        <xpath expr="//div[p[@name='payment_communication']]" position="replace"/>
+
+        <xpath expr="//div[@id='right-elements']" position="before">
+            <div id="left-elements" class="col-6 float-start mt-5">
+                <div class="mb-3" t-if="o.move_type in ('out_invoice', 'in_refund') and o.payment_reference">
+                    <p name="payment_communication">
+                        Payment Communication: <span class="fw-bold" t-field="o.payment_reference"/>
+                        <t t-if="o.partner_bank_id">
+                            <br/> on this account: <span t-field="o.partner_bank_id" class="fw-bold"/>
+                        </t>
+                    </p>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

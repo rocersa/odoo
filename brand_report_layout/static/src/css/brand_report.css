@@ -66,6 +66,28 @@ body,
     text-align: right !important;
 }
 
+/* Header: table layout, not flex — wkhtmltopdf's flexbox is unreliable and
+ * left the company address short of the right edge. The address cell is the
+ * last cell, so its right edge is the text block's right edge. */
+.header .d-flex {
+    display: table !important;
+    width: 100% !important;
+}
+
+.header .d-flex > div {
+    display: table-cell !important;
+    vertical-align: top !important;
+}
+
+/* Condense the gap between the header and the document body. */
+.header {
+    margin-bottom: 0 !important;
+}
+
+.article .row:first-child {
+    margin-top: 0 !important;
+}
+
 [name='address'],
 [name='address'] * {
     width: 100% !important;
