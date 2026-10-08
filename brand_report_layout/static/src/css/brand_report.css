@@ -52,3 +52,24 @@ body,
 [class*="o_report_layout_"] h5 {
     color: #1d1f25 !important;
 }
+
+/* Address alignment (standard §9): company address right, customer address
+ * left. address_layout's own column classes can still apply, so force both. */
+[name='company_address'],
+[name='company_address'] * {
+    text-align: right !important;
+}
+
+[name='address'],
+[name='address'] * {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    text-align: left !important;
+}
+
+/* Totals: near-black and bold, not the company colour. */
+.o_total strong,
+[class*="o_report_layout_"] .o_total strong {
+    color: #1d1f25 !important;
+}

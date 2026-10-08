@@ -28,7 +28,10 @@
                 <tbody>
                     <tr>
                         <td t-attf-class="p-0 {{'pt-3' if information_block else ''}}">
-                            <t t-call="web.address_layout"/>
+                            <!-- custom_layout_address drops address_layout's
+                                 default `col-5 ms-auto` (which pushes the block
+                                 right and cramps it) so it fills the cell. -->
+                            <t t-call="web.address_layout" custom_layout_address="true"/>
                         </td>
                         <td t-if="not information_block" class="align-bottom p-0 ps-2">
                             <h2 class="mb-4 text-nowrap text-end" t-out="layout_document_title"/>
