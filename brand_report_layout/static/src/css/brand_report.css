@@ -88,11 +88,16 @@ body,
     margin-top: 0 !important;
 }
 
-[name='address'],
-[name='address'] * {
+[name='address'] {
     width: 100% !important;
     max-width: 100% !important;
     margin-left: 0 !important;
+    text-align: left !important;
+}
+
+/* Descendants: alignment only. Forcing width on every descendant broke inline
+ * runs — e.g. the phone icon and number got newlined. */
+[name='address'] * {
     text-align: left !important;
 }
 
