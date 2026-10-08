@@ -73,3 +73,11 @@ body,
 [class*="o_report_layout_"] .o_total strong {
     color: #1d1f25 !important;
 }
+
+/* Information-block labels (Invoice Date, Due Date, Source, Reference):
+ * res.company.scss paints these with the secondary colour, which is too
+ * faint to read. Make them near-black like the rest of the text. */
+#informations strong,
+[class*="o_report_layout_"] #informations strong {
+    color: #1d1f25 !important;
+}
