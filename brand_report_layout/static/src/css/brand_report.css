@@ -96,6 +96,21 @@ body,
     text-align: left !important;
 }
 
+/* Delivery slip (stock.report_delivery_document) calls address_layout with an
+ * information_block, so the recipient address gets `col-5 offset-1` — indented
+ * and pushed right. Stack the address row and force the address left, full
+ * width, like every other report. */
+.address.row {
+    display: block !important;
+}
+
+.address.row > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    text-align: left !important;
+}
+
 /* Totals: near-black and bold, not the company colour. */
 .o_total strong,
 [class*="o_report_layout_"] .o_total strong {
