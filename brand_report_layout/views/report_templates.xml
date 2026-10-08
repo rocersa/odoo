@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Brand document layout (docs/brand/design-standard.md §9).
+
+        Base = the stock *striped* layout. Three changes:
+          1. company address right-aligned in the header (as in Bold);
+          2. customer address left, document number right on the same line
+             (as in Bubble);
+          3. the stock standalone document-title heading is removed.
+    -->
+    <template id="external_layout_striped_brand"
+              inherit_id="web.external_layout_striped"
+              name="Striped — Rocersa brand">
+
+        <xpath expr="//div[@name='company_address']" position="attributes">
+            <attribute name="class" add="text-end" separator=" "/>
+        </xpath>
+
+        <xpath expr="//t[@t-call='web.address_layout']" position="replace">
+            <table class="o_ignore_layout_styling table table-borderless mb-0">
+                <tbody>
+                    <tr>
+                        <td t-attf-class="p-0 {{'pt-3' if information_block else ''}}">
+                            <t t-call="web.address_layout"/>
+                        </td>
+                        <td t-if="not information_block" class="align-bottom p-0 ps-2">
+                            <h2 class="mb-4 text-nowrap text-end" t-out="layout_document_title"/>
+                        </td>
+                    </tr>
+                    <tr t-if="information_block">
+                        <td colspan="2" class="align-bottom p-0">
+                            <h2 class="text-nowrap text-end" t-out="layout_document_title"/>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_report_layout_striped')]/h2" position="replace"/>
+    </template>
+</odoo>

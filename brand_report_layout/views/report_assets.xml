@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Load the brand report stylesheet into the report assets bundle only, so
+        generated PDFs use Archivo while the backend UI is untouched.
+    -->
+    <record id="brand_report_assets" model="ir.asset">
+        <field name="name">brand_report_layout.report_assets</field>
+        <field name="bundle">web.report_assets_common</field>
+        <field name="path">brand_report_layout/static/src/css/brand_report.css</field>
+        <field name="sequence">90</field>
+    </record>
+</odoo>
