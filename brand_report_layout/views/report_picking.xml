@@ -63,6 +63,9 @@
         </xpath>
         <!-- The delivery address now sits top-left: drop the row-2 copy. -->
         <xpath expr="//div[@name='div_outgoing_address']" position="replace"/>
+        <!-- The Customer Address block only repeats the partner, which the
+             delivery address already shows: drop it. -->
+        <xpath expr="//div[@name='div_customer_address']" position="replace"/>
 
         <!-- Header: Code before Product, Weight before Quantity
              (internal + outgoing), giving Code | Product | Weight | Quantity. -->
