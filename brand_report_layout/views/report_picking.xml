@@ -1,60 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        Internal transfer (stock.report_picking, the "Picking Operations"
-        report). The same template prints receipts and deliveries, so every
-        change here is guarded on ``o.picking_type_id.code == 'internal'``;
-        the other picking types keep the stock layout.
+        Brand pick list for stock.report_picking (the "Picking Operations"
+        report), used by **internal transfers and outgoing deliveries**. The
+        same template also prints receipts, which keep the stock layout, so
+        every change here is guarded on ``o.picking_type_id.code != 'incoming'``.
 
-        The internal picklist is printed **one line per product**, not one per
-        kit: components shared by several kits are amalgamated (quantity and
-        weight summed) by ``stock.picking._brand_amalgamated_lines``. Columns
-        are Code | Product | Weight | Quantity.
+        The pick list is printed **one line per product**, not one per kit:
+        components shared by several kits are amalgamated (quantity and weight
+        summed) by ``stock.picking._brand_amalgamated_lines``. Columns are
+        Code | Product | Weight | Quantity.
 
-        Widths live in brand_report.css, scoped to the ``o_internal_transfer``
-        class this template adds to the page.
+        Widths and the enlarged delivery address live in brand_report.css,
+        scoped to the ``o_brand_pick`` class this template adds to the page.
     -->
-    <template id="report_picking_internal_transfer"
+    <template id="report_picking_brand_pick"
               inherit_id="stock.report_picking"
-              name="Internal transfer — amalgamated product picklist">
+              name="Picking Operations — amalgamated product picklist">
 
-        <!-- Tag the page so brand_report.css can scope its rules to internal
-             transfers only. Static ``class`` is overwritten by ``t-attf-class``
+        <!-- Tag the page so brand_report.css can scope its rules to the brand
+             pick list. Static ``class`` is overwritten by ``t-attf-class``
              (QWeb adds dynamic attrs after static ones), so the base classes
              are repeated here. -->
         <xpath expr="//div[hasclass('o_report_stockpicking_operations')]" position="attributes">
-            <attribute name="t-attf-class">page o_report_stockpicking_operations{{ ' o_internal_transfer' if o.picking_type_id.code == 'internal' else '' }}</attribute>
+            <attribute name="t-attf-class">page o_report_stockpicking_operations{{ ' o_brand_pick' if o.picking_type_id.code != 'incoming' else '' }}</attribute>
         </xpath>
 
-        <!-- Header: Code before Product, Weight before Quantity (internal only),
-             giving Code | Product | Weight | Quantity. -->
+        <!-- Header: Code before Product, Weight before Quantity
+             (internal + outgoing), giving Code | Product | Weight | Quantity. -->
         <xpath expr="//th[@name='th_product']" position="before">
-            <th name="th_product_code" class="text-start" t-if="o.picking_type_id.code == 'internal'">
+            <th name="th_product_code" class="text-start" t-if="o.picking_type_id.code != 'incoming'">
                 <strong>Code</strong>
             </th>
         </xpath>
         <xpath expr="//th[@name='th_quantity']" position="before">
-            <th name="th_weight" class="text-end" t-if="o.picking_type_id.code == 'internal'">
+            <th name="th_weight" class="text-end" t-if="o.picking_type_id.code != 'incoming'">
                 <strong>Weight</strong>
             </th>
         </xpath>
 
-        <!-- From / To are the same pair on every internal transfer: drop the
-             columns by disabling the flags the header reads. -->
+        <!-- Location columns: From is dropped on every picking type, To only
+             remains on receipts. -->
         <xpath expr="//t[@t-set='from_col_exists']" position="attributes">
-            <attribute name="t-value">o.picking_type_id.code not in ('incoming', 'internal')</attribute>
+            <attribute name="t-value">False</attribute>
         </xpath>
         <xpath expr="//t[@t-set='to_col_exists']" position="attributes">
-            <attribute name="t-value">o.picking_type_id.code not in ('outgoing', 'internal')</attribute>
+            <attribute name="t-value">o.picking_type_id.code == 'incoming'</attribute>
         </xpath>
 
-        <!-- Body: for an internal transfer, hide the stock per-move rows and
+        <!-- Body: for the brand pick list, hide the stock per-move rows and
              print the amalgamated product lines instead. -->
         <xpath expr="//table[hasclass('o_main_table')]/tbody/t[@t-foreach]" position="attributes">
-            <attribute name="t-if">o.picking_type_id.code != 'internal'</attribute>
+            <attribute name="t-if">o.picking_type_id.code == 'incoming'</attribute>
         </xpath>
         <xpath expr="//table[hasclass('o_main_table')]/tbody/t[@t-foreach]" position="before">
-            <t t-if="o.picking_type_id.code == 'internal'">
+            <t t-if="o.picking_type_id.code != 'incoming'">
                 <tr t-foreach="o._brand_amalgamated_lines()" t-as="line">
                     <t t-set="product" t-value="line['product']"/>
                     <td class="text-start">

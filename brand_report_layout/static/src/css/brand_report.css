@@ -130,27 +130,33 @@ body,
     color: #1d1f25 !important;
 }
 
-/* Internal transfer (stock.report_picking), scoped by the o_internal_transfer
- * class report_picking.xml adds to the page. The main table uses
- * `table-layout: fixed`, so a column's width comes from its header cell. */
-.o_report_stockpicking_operations.o_internal_transfer th[name='th_product_code'] {
+/* Brand pick list (stock.report_picking, internal transfers + outgoing
+ * deliveries), scoped by the o_brand_pick class report_picking.xml adds to the
+ * page. The main table uses `table-layout: fixed`, so a column's width comes
+ * from its header cell. */
+.o_report_stockpicking_operations.o_brand_pick th[name='th_product_code'] {
     width: 16%;
 }
 
 /* Weight holds "<n>.<nn> kg". */
-.o_report_stockpicking_operations.o_internal_transfer th[name='th_weight'] {
+.o_report_stockpicking_operations.o_brand_pick th[name='th_weight'] {
     width: 14%;
 }
 
 /* Quantity kept deliberately narrow: the UoM marker is gone and the values are
  * short, so only "Quantity" needs the room. */
-.o_report_stockpicking_operations.o_internal_transfer th[name='th_quantity'] {
+.o_report_stockpicking_operations.o_brand_pick th[name='th_quantity'] {
     width: 12%;
 }
 
 /* The stock header row (Order / Warehouse / Status / …) sits in a 32px top /
- * 32px bottom margin. Tighten it for the internal transfer. */
-.o_report_stockpicking_operations.o_internal_transfer .o_stock_report_header_row {
+ * 32px bottom margin. Tighten it for the pick list. */
+.o_report_stockpicking_operations.o_brand_pick .o_stock_report_header_row {
     margin-top: 8px !important;
     margin-bottom: 16px !important;
+}
+
+/* Delivery address (outgoing): larger text so it stands out on the pick list. */
+.o_report_stockpicking_operations.o_brand_pick [name='div_outgoing_address'] {
+    font-size: 1.4em;
 }
