@@ -11,6 +11,9 @@
         summed) by ``stock.picking._brand_amalgamated_lines``. Columns are
         Code | Product | Weight | Quantity.
 
+        On an outgoing delivery the delivery address is moved to the top-left
+        and enlarged, with the title moved to the right beside the barcode.
+
         Widths and the enlarged delivery address live in brand_report.css,
         scoped to the ``o_brand_pick`` class this template adds to the page.
     -->
@@ -25,6 +28,34 @@
         <xpath expr="//div[hasclass('o_report_stockpicking_operations')]" position="attributes">
             <attribute name="t-attf-class">page o_report_stockpicking_operations{{ ' o_brand_pick' if o.picking_type_id.code != 'incoming' else '' }}</attribute>
         </xpath>
+
+        <!-- Outgoing deliveries: put the delivery address in the top-left (where
+             the title sits) and move the title to the right, with the barcode.
+             Internal transfers and receipts keep the title top-left. -->
+        <xpath expr="//div[h3[@t-field='o.picking_type_id.code']]" position="replace">
+            <t t-if="o.picking_type_id.code == 'outgoing'">
+                <div class="col-4" name="div_pick_address">
+                    <div t-if="o.should_print_delivery_address()">
+                        <strong>Delivery Address:</strong>
+                        <div t-out="o.move_ids[0].partner_id or o.partner_id" t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                    </div>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="col-4">
+                    <h3 t-field="o.picking_type_id.code"/>
+                    <h2 t-field="o.name">WH/OUT/00001</h2>
+                </div>
+            </t>
+        </xpath>
+        <xpath expr="//div[@name='right_box']/div[@t-field='o.name']" position="before">
+            <div class="text-end" t-if="o.picking_type_id.code == 'outgoing'">
+                <h3 t-field="o.picking_type_id.code"/>
+                <h2 t-field="o.name">WH/OUT/00001</h2>
+            </div>
+        </xpath>
+        <!-- The delivery address now sits top-left: drop the row-2 copy. -->
+        <xpath expr="//div[@name='div_outgoing_address']" position="replace"/>
 
         <!-- Header: Code before Product, Weight before Quantity
              (internal + outgoing), giving Code | Product | Weight | Quantity. -->

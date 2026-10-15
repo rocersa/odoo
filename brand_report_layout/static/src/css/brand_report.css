@@ -156,7 +156,8 @@ body,
     margin-bottom: 16px !important;
 }
 
-/* Delivery address (outgoing): larger text so it stands out on the pick list. */
-.o_report_stockpicking_operations.o_brand_pick [name='div_outgoing_address'] {
-    font-size: 1.4em;
+/* Delivery address (outgoing): sits top-left and is doubled in size so the
+ * destination stands out on the pick list. */
+.o_report_stockpicking_operations.o_brand_pick [name='div_pick_address'] {
+    font-size: 2.8em;
 }
