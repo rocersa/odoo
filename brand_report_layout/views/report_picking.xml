@@ -34,10 +34,12 @@
              Internal transfers and receipts keep the title top-left. -->
         <xpath expr="//div[h3[@t-field='o.picking_type_id.code']]" position="replace">
             <t t-if="o.picking_type_id.code == 'outgoing'">
-                <div class="col-4" name="div_pick_address">
+                <div class="col" name="div_pick_address">
                     <div t-if="o.should_print_delivery_address()">
                         <strong>Delivery Address:</strong>
-                        <div t-out="o.move_ids[0].partner_id or o.partner_id" t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                        <div class="o_pick_address_body">
+                            <div t-out="o.move_ids[0].partner_id or o.partner_id" t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                        </div>
                     </div>
                 </div>
             </t>
@@ -48,8 +50,13 @@
                 </div>
             </t>
         </xpath>
+        <!-- Right column: left-aligned, and for outgoing sized to its content
+             (the title, not col-8) so the delivery address gets the rest. -->
+        <xpath expr="//div[@name='right_box']" position="attributes">
+            <attribute name="t-attf-class">{{ 'col-auto text-nowrap' if o.picking_type_id.code == 'outgoing' else 'col-8' }}</attribute>
+        </xpath>
         <xpath expr="//div[@name='right_box']/div[@t-field='o.name']" position="before">
-            <div class="text-end" t-if="o.picking_type_id.code == 'outgoing'">
+            <div t-if="o.picking_type_id.code == 'outgoing'">
                 <h3 t-field="o.picking_type_id.code"/>
                 <h2 t-field="o.name">WH/OUT/00001</h2>
             </div>

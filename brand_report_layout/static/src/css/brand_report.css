@@ -156,8 +156,8 @@ body,
     margin-bottom: 16px !important;
 }
 
-/* Delivery address (outgoing): sits top-left and is doubled in size so the
- * destination stands out on the pick list. */
-.o_report_stockpicking_operations.o_brand_pick [name='div_pick_address'] {
+/* Delivery address (outgoing): sits top-left. Only the address body is doubled
+ * in size; the "Delivery Address:" label stays normal. */
+.o_report_stockpicking_operations.o_brand_pick [name='div_pick_address'] .o_pick_address_body {
     font-size: 2.8em;
 }
