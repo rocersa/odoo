@@ -37,8 +37,15 @@
                 <div class="col" name="div_pick_address">
                     <div t-if="o.should_print_delivery_address()">
                         <strong>Delivery Address:</strong>
+                        <t t-set="dest" t-value="o.move_ids[0].partner_id or o.partner_id"/>
+                        <t t-set="dest_company" t-value="dest.commercial_company_name or dest.parent_id.name"/>
+                        <!-- Odoo's contact widget folds the partner and its
+                             company into one line ("Company, Person"). Print
+                             the name, then the company, then the address. -->
                         <div class="o_pick_address_body">
-                            <div t-out="o.move_ids[0].partner_id or o.partner_id" t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                            <div t-out="dest.name"/>
+                            <div t-if="dest_company and dest_company != dest.name" t-out="dest_company"/>
+                            <div t-out="dest" t-options='{"widget": "contact", "fields": ["address", "phone"], "no_marker": True, "phone_icons": True}'/>
                         </div>
                     </div>
                 </div>
