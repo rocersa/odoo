@@ -28,13 +28,18 @@ class ProductPricelistItem(models.Model):
 
             currency = currency or self.currency_id or self.env.company.currency_id
 
+            base_price = self._compute_bom_components_price(product, quantity, uom, date, currency)
+            if base_price is None:
+                # No component pricelist, or the product is not a BoM kit: this
+                # rule does not apply, so keep the product's catalog price.
+                return self._compute_catalog_price(product, uom, date, currency)
+
             product_uom = product.uom_id
             if product_uom != uom:
                 convert = lambda p: product_uom._compute_price(p, uom)
             else:
                 convert = lambda p: p
 
-            base_price = self._compute_base_price(product, quantity, uom, date, currency, **kwargs)
             price_limit = base_price
             price = base_price + (base_price * (self.price_markup / 100))
             if self.price_round:
@@ -63,9 +68,26 @@ class ProductPricelistItem(models.Model):
         return super()._get_price_label_base_str()
 
     def _compute_base_price(self, product, quantity, uom, date, currency, **kwargs):
-        rule_base = self.base or 'list_price'
-        if rule_base != 'bom_component_pricelist' or not self.component_pricelist_id:
+        # Core's _compute_base_price only understands 'list_price',
+        # 'standard_price' and 'pricelist'; it resolves anything else with
+        # product._price_compute(base), which raises KeyError on our custom
+        # base. So never hand this base to super().
+        if self.base != 'bom_component_pricelist':
             return super()._compute_base_price(product, quantity, uom, date, currency, **kwargs)
+
+        base_price = self._compute_bom_components_price(product, quantity, uom, date, currency)
+        if base_price is not None:
+            return base_price
+        return self._compute_catalog_price(product, uom, date, currency)
+
+    def _compute_bom_components_price(self, product, quantity, uom, date, currency):
+        """Sum the component retail prices for a BoM kit.
+
+        Returns None when the rule does not apply (no component pricelist, or
+        the product has no BoM), so the caller can fall back.
+        """
+        if not self.component_pricelist_id:
+            return None
 
         product.ensure_one()
 
@@ -77,7 +99,7 @@ class ProductPricelistItem(models.Model):
 
         bom = self.env['mrp.bom']._bom_find(product_product).get(product_product)
         if not bom:
-            return super()._compute_base_price(product, quantity, uom, date, currency, **kwargs)
+            return None
 
         component_pricelist = self.component_pricelist_id
         total = 0.0
@@ -108,3 +130,11 @@ class ProductPricelistItem(models.Model):
             total = product_uom._compute_price(total, uom)
 
         return total
+
+    def _compute_catalog_price(self, product, uom, date, currency):
+        """The product's catalog price, converted to the requested currency."""
+        src_currency = product.currency_id
+        price = product._price_compute('list_price', uom=uom, date=date)[product.id]
+        if src_currency != currency:
+            price = src_currency._convert(price, currency, self.env.company, date, round=False)
+        return price
