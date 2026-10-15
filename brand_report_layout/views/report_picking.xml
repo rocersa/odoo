@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Internal transfer (stock.report_picking, the "Picking Operations"
+        report). The same template prints receipts and deliveries, so every
+        change here is guarded on ``o.picking_type_id.code == 'internal'``;
+        the other picking types keep the stock layout.
+
+        The internal picklist is printed **one line per product**, not one per
+        kit: components shared by several kits are amalgamated (quantity and
+        weight summed) by ``stock.picking._brand_amalgamated_lines``. Columns
+        are Code | Product | Weight | Quantity.
+
+        Widths live in brand_report.css, scoped to the ``o_internal_transfer``
+        class this template adds to the page.
+    -->
+    <template id="report_picking_internal_transfer"
+              inherit_id="stock.report_picking"
+              name="Internal transfer — amalgamated product picklist">
+
+        <!-- Tag the page so brand_report.css can scope its rules to internal
+             transfers only. Static ``class`` is overwritten by ``t-attf-class``
+             (QWeb adds dynamic attrs after static ones), so the base classes
+             are repeated here. -->
+        <xpath expr="//div[hasclass('o_report_stockpicking_operations')]" position="attributes">
+            <attribute name="t-attf-class">page o_report_stockpicking_operations{{ ' o_internal_transfer' if o.picking_type_id.code == 'internal' else '' }}</attribute>
+        </xpath>
+
+        <!-- Header: Code before Product, Weight before Quantity (internal only),
+             giving Code | Product | Weight | Quantity. -->
+        <xpath expr="//th[@name='th_product']" position="before">
+            <th name="th_product_code" class="text-start" t-if="o.picking_type_id.code == 'internal'">
+                <strong>Code</strong>
+            </th>
+        </xpath>
+        <xpath expr="//th[@name='th_quantity']" position="before">
+            <th name="th_weight" class="text-end" t-if="o.picking_type_id.code == 'internal'">
+                <strong>Weight</strong>
+            </th>
+        </xpath>
+
+        <!-- From / To are the same pair on every internal transfer: drop the
+             columns by disabling the flags the header reads. -->
+        <xpath expr="//t[@t-set='from_col_exists']" position="attributes">
+            <attribute name="t-value">o.picking_type_id.code not in ('incoming', 'internal')</attribute>
+        </xpath>
+        <xpath expr="//t[@t-set='to_col_exists']" position="attributes">
+            <attribute name="t-value">o.picking_type_id.code not in ('outgoing', 'internal')</attribute>
+        </xpath>
+
+        <!-- Body: for an internal transfer, hide the stock per-move rows and
+             print the amalgamated product lines instead. -->
+        <xpath expr="//table[hasclass('o_main_table')]/tbody/t[@t-foreach]" position="attributes">
+            <attribute name="t-if">o.picking_type_id.code != 'internal'</attribute>
+        </xpath>
+        <xpath expr="//table[hasclass('o_main_table')]/tbody/t[@t-foreach]" position="before">
+            <t t-if="o.picking_type_id.code == 'internal'">
+                <tr t-foreach="o._brand_amalgamated_lines()" t-as="line">
+                    <t t-set="product" t-value="line['product']"/>
+                    <td class="text-start">
+                        <span t-out="product.default_code"/>
+                    </td>
+                    <td class="text-start">
+                        <span t-out="product.name"/>
+                    </td>
+                    <td class="text-end">
+                        <span t-out="line['weight']" t-options="{'widget': 'float', 'precision': 2}"/>
+                        <span t-out="product.weight_uom_name"/>
+                    </td>
+                    <td class="o_td_quantity text-end">
+                        <span t-out="format_number(line['quantity'])" class="text-nowrap"/>
+                    </td>
+                    <td class="text-center" t-if="barcode_col_exists">
+                        <span t-if="product.barcode">
+                            <div t-field="product.barcode" t-options="{'widget': 'barcode', 'symbology': 'auto', 'width': 400, 'height': 100, 'quiet': 0, 'img_style': 'height:35px;'}">
+                                <div class="bg-light border-1 rounded d-flex flex-column align-items-center justify-content-center px-1 py-2 opacity-75 text-muted text-center">
+                                    (product barcode)
+                                </div>
+                            </div>
+                        </span>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </template>
+
+    <!--
+        stock_delivery adds a "Weight:" (o.shipping_weight) to the picking
+        header row, shown at the field's own digits. Print it to 2dp so it
+        matches the picklist's Weight column.
+    -->
+    <template id="report_picking_header_weight"
+              inherit_id="stock_delivery.report_shipping2"
+              name="Picking Operations — header weight to 2dp">
+        <xpath expr="//span[@t-field='o.shipping_weight']" position="attributes">
+            <attribute name="t-options">{'widget': 'float', 'precision': 2}</attribute>
+        </xpath>
+    </template>
+
+    <!--
+        The picking report renders no letterhead, so the default A4 top margin
+        (52 mm) and bottom margin (32 mm) are blank. Use a paperformat with a
+        normal print margin instead. Left/right stay at 0 here because
+        css_margins=True supplies 11 mm of side padding via the report CSS —
+        same as invoices and delivery slips.
+    -->
+    <record id="paperformat_picking_operations" model="report.paperformat">
+        <field name="name">Picking Operations</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">11</field>
+        <field name="margin_bottom">11</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+        <field name="css_margins" eval="True"/>
+    </record>
+
+    <record id="stock.action_report_picking" model="ir.actions.report">
+        <field name="paperformat_id" ref="paperformat_picking_operations"/>
+    </record>
+</odoo>
