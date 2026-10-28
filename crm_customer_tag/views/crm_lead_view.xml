@@ -6,39 +6,19 @@
         <field name="model">crm.lead</field>
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
-            <!-- Change tag_ids label to "Opportunity Type" in the lead section -->
+            <!-- Odoo 20 merges the old lead/opportunity sections into one
+                 group holding user_id, date_deadline, priority and tag_ids.
+                 There is one tag_ids now, so one anchor covers both. -->
             <xpath
-                expr="//group[@name='lead_priority']/field[@name='tag_ids']"
+                expr="//group[field[@name='user_id'] and field[@name='tag_ids']]/field[@name='tag_ids']"
                 position="attributes"
             >
                 <attribute name="string">Opportunity Type</attribute>
             </xpath>
 
-            <!-- Add Customer Type field after tag_ids in the lead section -->
+            <!-- Add Customer Type field after tag_ids -->
             <xpath
-                expr="//group[@name='lead_priority']/field[@name='tag_ids']"
-                position="after"
-            >
-                <field
-                    name="category_id"
-                    string="Customer Type"
-                    widget="many2many_tags"
-                    options="{'color_field': 'color', 'no_create_edit': True}"
-                    readonly="not partner_id"
-                />
-            </xpath>
-
-            <!-- Change tag_ids label to "Opportunity Type" in the opportunity section -->
-            <xpath
-                expr="//field[@name='type']/following-sibling::group[1]/field[@name='tag_ids']"
-                position="attributes"
-            >
-                <attribute name="string">Opportunity Type</attribute>
-            </xpath>
-
-            <!-- Add Customer Type field after tag_ids in the opportunity section -->
-            <xpath
-                expr="//field[@name='type']/following-sibling::group[1]/field[@name='tag_ids']"
+                expr="//group[field[@name='user_id'] and field[@name='tag_ids']]/field[@name='tag_ids']"
                 position="after"
             >
                 <field

@@ -1,4 +1,5 @@
-from odoo import _, api, fields, models, tools
+from odoo import _, api, fields, models
+from odoo.api import ormcache
 from odoo.exceptions import ValidationError
 
 
@@ -124,7 +125,7 @@ class McpEnabledModel(models.Model):
     # wrappers callers use.
     # ------------------------------------------------------------------
     @api.model
-    @tools.ormcache()
+    @ormcache()
     def _get_mcp_enabled(self):
         """Global MCP enable switch (``mcp_server.enabled``, default off)."""
         return (
@@ -135,7 +136,7 @@ class McpEnabledModel(models.Model):
         )
 
     @api.model
-    @tools.ormcache()
+    @ormcache()
     def _get_oauth_enabled(self):
         """OAuth front-door switch (``mcp_server.enable_oauth``, default on)."""
         return (
@@ -146,7 +147,7 @@ class McpEnabledModel(models.Model):
         )
 
     @api.model
-    @tools.ormcache()
+    @ormcache()
     def _get_allowed_origins(self):
         """Parsed browser-Origin allowlist (``mcp_server.allowed_origins``).
 
@@ -166,7 +167,7 @@ class McpEnabledModel(models.Model):
         )
 
     @api.model
-    @tools.ormcache("model_name")
+    @ormcache("model_name")
     def is_model_enabled(self, model_name):
         """Check if a model is enabled for MCP access.
 
@@ -180,7 +181,7 @@ class McpEnabledModel(models.Model):
         return bool(record)
 
     @api.model
-    @tools.ormcache("model_name", "operation")
+    @ormcache("model_name", "operation")
     def check_model_operation_enabled(self, model_name, operation):
         """Check if a specific operation is enabled for a model (``@ormcache``-d)."""
         if operation not in ["read", "create", "write", "unlink"]:
@@ -198,7 +199,7 @@ class McpEnabledModel(models.Model):
         return bool(record["allow_" + operation])
 
     @api.model
-    @tools.ormcache("model_name")
+    @ormcache("model_name")
     def is_method_call_enabled(self, model_name):
         """Whether ``call_model_method`` is allowed for a model (``@ormcache``-d).
 

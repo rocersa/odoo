@@ -27,7 +27,7 @@
                             name="documentation_link"
                             path="https://posthog.com/docs/getting-started/install"
                             label=" How to get my Project API Key"
-                            icon="oi oi-arrow-right"
+                            icon="east"
                         />
                     </div>
                 </setting>

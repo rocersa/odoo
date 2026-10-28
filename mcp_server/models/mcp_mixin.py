@@ -21,7 +21,7 @@ import base64
 
 from odoo import _, api, models
 from odoo.exceptions import AccessError, MissingError, UserError
-from odoo.tools import ormcache
+from odoo.api import ormcache
 from odoo.tools.mimetypes import guess_mimetype
 
 from ..controllers import utils

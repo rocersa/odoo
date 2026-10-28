@@ -17,9 +17,9 @@
                 <field name="custom_name"
                     placeholder="Auto-generated if empty"/>
                 <label for="min_area" string="Area Filter (mm²)"
-                    invisible="display_applied_on != '1_product' or not product_tmpl_id or product_variant_count &lt; 2"/>
+                    invisible="applied_on != '1_product' or not product_tmpl_id or product_variant_count &lt; 2"/>
                 <div class="o_row"
-                    invisible="display_applied_on != '1_product' or not product_tmpl_id or product_variant_count &lt; 2">
+                    invisible="applied_on != '1_product' or not product_tmpl_id or product_variant_count &lt; 2">
                     <field name="min_area" placeholder="Min"/>
                     <span class="mx-1">—</span>
                     <field name="max_area" placeholder="Max"/>

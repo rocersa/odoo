@@ -16,7 +16,7 @@
     'author': "Harry",
 
     'category': 'Purchase Management',
-    'version': '0.3',
+    'version': '20.0.1.0.0',
 
     'depends': ['purchase', 'stock'],
     'application': True,

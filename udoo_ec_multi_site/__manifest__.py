@@ -5,7 +5,7 @@
     'name': 'Multi-Company Product Visibility',
     'category': 'Website/Website',
     'summary': 'Manage multichannel listing eCommerce product with bulk website assign, multi website product, multi website category, mass update publishing state, product multi website, managing products across multiple websites, multi shop, multi product, multi categories, multiple websites sale per product, odoo multi websites, multi website selection for products | multiple websites per category | bulk website assign | product multiple website',
-    'version': '1.0.7',
+    'version': '20.0.1.0.0',
     'license': 'LGPL-3',
     'author': 'Sveltware Solutions',
     'website': 'https://www.linkedin.com/in/sveltware',
@@ -15,7 +15,7 @@
         'website_sale',
     ],
     'data': [
-        'security/ir.model.access.csv',
+        'security/ir.access.csv',
         'views/product_views.xml',
         'views/multi_website_product.xml',
         'wizard/multi_website_setter.xml',

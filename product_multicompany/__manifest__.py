@@ -5,7 +5,7 @@
     'name': 'Multi-Company Product',
     'category': 'Product',
     'summary': "Filter each company's product catalog by a per-product list of companies.",
-    'version': '1.2.3',
+    'version': '20.0.1.0.0',
     'license': 'LGPL-3',
     'author': 'Sveltware Solutions',
     'website': 'https://www.linkedin.com/in/sveltware',

@@ -1,7 +1,7 @@
 """Custom HTTP dispatcher for the native MCP protocol.
 
 Registers a ``type='mcp'`` dispatcher with Odoo's HTTP layer: the base
-:class:`odoo.http.Dispatcher` records every subclass in ``http._dispatchers``
+:class:`odoo.http.dispatcher.Dispatcher` records every subclass in ``http._dispatchers``
 keyed by its ``routing_type`` (``Dispatcher.__init_subclass__``), so declaring
 ``routing_type = "mcp"`` is enough to make ``@mcp_route`` endpoints routable.
 
@@ -16,7 +16,8 @@ import werkzeug.exceptions
 from werkzeug.exceptions import HTTPException
 
 from odoo import http
-from odoo.http import CORS_MAX_AGE, Response
+from odoo.http import Response
+from odoo.http.dispatcher import CORS_MAX_AGE, Dispatcher
 
 from . import jsonrpc, utils
 from .error_sanitizer import GENERIC_ERROR_MESSAGE
@@ -24,7 +25,7 @@ from .error_sanitizer import GENERIC_ERROR_MESSAGE
 _logger = logging.getLogger(__name__)
 
 
-class MCPDispatcher(http.Dispatcher):
+class MCPDispatcher(Dispatcher):
     """Serve ``@mcp_route`` endpoints (plain JSON-RPC 2.0 over HTTP POST)."""
 
     routing_type = "mcp"
@@ -46,7 +47,7 @@ class MCPDispatcher(http.Dispatcher):
 
         Browser MCP clients send a CORS preflight before the real POST; the
         headers are also set on the actual request so its JSON-RPC response is
-        readable cross-origin. Mirrors :meth:`odoo.http.Dispatcher.pre_dispatch`
+        readable cross-origin. Mirrors :meth:`odoo.http.dispatcher.Dispatcher.pre_dispatch`
         but kept here so the transport concern lives in one place, including
         core's per-route ``max_content_length`` cap (``@mcp_route`` sets a small
         default) so an oversized body is refused before it is buffered/parsed.
@@ -130,7 +131,7 @@ class MCPDispatcher(http.Dispatcher):
         )
 
         if self.request.httprequest.method == "OPTIONS":
-            headers.set("Access-Control-Max-Age", CORS_MAX_AGE)
+            headers.set("Access-Control-Max-Age", str(CORS_MAX_AGE))
             headers.set(
                 "Access-Control-Allow-Headers",
                 # MCP-Protocol-Version is REQUIRED on every post-initialize

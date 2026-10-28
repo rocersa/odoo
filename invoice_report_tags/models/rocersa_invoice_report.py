@@ -42,8 +42,8 @@ class RocersaInvoiceReport(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency', readonly=True)
 
     @property
-    def _table_query(self):
-        return SQL("""
+    def _table_sql(self):
+        query = SQL("""
             SELECT
                 move.id AS id,
                 move.id AS move_id,
@@ -60,3 +60,4 @@ class RocersaInvoiceReport(models.Model):
             FROM account_move move
             WHERE move.move_type IN ('out_invoice', 'out_refund')
         """)
+        return SQL("(%s)", query)

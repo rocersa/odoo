@@ -1,0 +1,6 @@
+id,name,model_id,group_id/id,operation,domain
+access_product_public_category_image_public,product.public.category.image public,product.public.category.image,base.group_public,r,
+access_product_public_category_image_portal,product.public.category.image portal,product.public.category.image,base.group_portal,r,
+access_product_public_category_image_employee,product.public.category.image employee,product.public.category.image,base.group_user,r,
+access_product_public_category_image_editor,product.public.category.image editor,product.public.category.image,website.group_website_restricted_editor,crud,
+access_product_public_category_image_manager,product.public.category.image manager,product.public.category.image,sales_team.group_sale_manager,crud,
