@@ -25,7 +25,7 @@
              pick list. Static ``class`` is overwritten by ``t-attf-class``
              (QWeb adds dynamic attrs after static ones), so the base classes
              are repeated here. -->
-        <xpath expr="//div[hasclass('o_report_stockpicking_operations')]" position="attributes">
+        <xpath expr="//div[hasclass('page')]" position="attributes">
             <attribute name="t-attf-class">page o_report_stockpicking_operations{{ ' o_brand_pick' if o.picking_type_id.code != 'incoming' else '' }}</attribute>
         </xpath>
 
