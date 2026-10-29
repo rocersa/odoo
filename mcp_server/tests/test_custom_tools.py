@@ -31,6 +31,7 @@ from psycopg2 import IntegrityError
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 from odoo.tools import mute_logger
 
 from ..controllers import rate_limiting, utils
@@ -209,12 +210,12 @@ class TestCustomToolsModel(common.TransactionCase):
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestCustomTools(common.HttpCase):
+class TestCustomTools(McpHttpCase):
     """Custom-tool execution, access gate, rollback, scope + audit on /mcp."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
@@ -274,10 +275,10 @@ class TestCustomTools(common.HttpCase):
         )
 
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
-        params.set_param("mcp_server.enable_logging", "True")
-        params.set_param("mcp_server.enable_oauth", "True")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enable_logging", "True")
+        params.set_str("mcp_server.enable_oauth", "True")
+        utils.clear_mcp_caches(self.env)
 
         # OAuth audience the AS derives from the request host (RFC 8707); a token's
         # audience must equal this to be accepted at /mcp.
@@ -298,7 +299,7 @@ class TestCustomTools(common.HttpCase):
     # ------------------------------------------------------------------
     def _mint_key(self, user, name):
         """Mint an ``rpc``-scope API key for ``user``."""
-        return self.env(user=user)["res.users.apikeys"]._generate(
+        return self.env(user=user)["res.users.apikeys"].sudo()._generate(
             "rpc", name, fields.Datetime.now() + timedelta(days=30)
         )
 

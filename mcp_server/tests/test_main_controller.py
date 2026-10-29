@@ -2,18 +2,19 @@ import json
 from datetime import datetime, timedelta
 
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
 from ..controllers import utils
 from .test_helpers import create_test_user
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMcpMainController(common.HttpCase):
+class TestMcpMainController(McpHttpCase):
     """Test cases for the MCP API Controller main endpoints"""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         # Create test user with unique login to avoid conflicts
         import time
@@ -27,7 +28,7 @@ class TestMcpMainController(common.HttpCase):
 
         # Generate API key
         env_as_user = self.env(user=self.mcp_user)
-        self.api_key = env_as_user["res.users.apikeys"]._generate(
+        self.api_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "Test MCP API Key", datetime.now() + timedelta(days=30)
         )
 
@@ -78,7 +79,7 @@ class TestMcpMainController(common.HttpCase):
             existing_users_model.sudo().unlink()
 
         # Enable MCP globally
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
 
     def test_health_check_success(self):
         """Test health check endpoint when MCP is enabled"""
@@ -92,7 +93,7 @@ class TestMcpMainController(common.HttpCase):
 
     def test_health_check_disabled(self):
         """Test health check when MCP is disabled"""
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "False")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "False")
 
         response = self.url_open("/mcp/health")
         self.assertEqual(response.status_code, 503)
@@ -103,7 +104,7 @@ class TestMcpMainController(common.HttpCase):
 
     def test_all_endpoints_disabled_when_mcp_disabled(self):
         """Test that all MCP endpoints return errors when MCP is globally disabled"""
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "False")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "False")
         headers = {"X-API-Key": self.api_key}
 
         # Test system info
@@ -240,7 +241,7 @@ class TestMcpMainController(common.HttpCase):
 
     def test_mcp_disabled_globally(self):
         """Test endpoints return 503 when MCP is disabled globally"""
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "False")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "False")
         headers = {"X-API-Key": self.api_key}
 
         # Test multiple endpoints return same error

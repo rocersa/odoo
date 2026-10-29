@@ -5,13 +5,14 @@ from datetime import datetime, timedelta
 
 from odoo.tests import tagged
 from odoo.tests.common import HttpCase
+from .common import McpHttpCase
 
 from ..controllers import auth
 from .test_helpers import create_test_user
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMCPAuthentication(HttpCase):
+class TestMCPAuthentication(McpHttpCase):
     """Test MCP Server authentication functionality."""
 
     @classmethod
@@ -29,7 +30,7 @@ class TestMCPAuthentication(HttpCase):
 
         # Create API key for test user
         env_as_user = cls.env(user=cls.test_user)
-        cls.api_key = env_as_user["res.users.apikeys"]._generate(
+        cls.api_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "Test API Key", datetime.now() + timedelta(days=30)
         )
 
@@ -41,7 +42,7 @@ class TestMCPAuthentication(HttpCase):
         auth._auth_failure_limiter.clear()
         # Global MCP kill-switch defaults off; enable it so the gated REST
         # endpoints under test answer 200 instead of 503 on a fresh database.
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
 
     def test_01_auth_with_valid_api_key(self):
         """Test authentication with valid API key."""
@@ -208,7 +209,7 @@ class TestMCPAuthentication(HttpCase):
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestSessionAuth(HttpCase):
+class TestSessionAuth(McpHttpCase):
     """Test session-based authentication for MCP REST endpoints."""
 
     @classmethod
@@ -225,7 +226,7 @@ class TestSessionAuth(HttpCase):
 
         # Create API key for priority test
         env_as_user = cls.env(user=cls.test_user)
-        cls.api_key = env_as_user["res.users.apikeys"]._generate(
+        cls.api_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "Test Session API Key", datetime.now() + timedelta(days=30)
         )
 
@@ -233,7 +234,7 @@ class TestSessionAuth(HttpCase):
         super().setUp()
         # Global MCP kill-switch defaults off; enable it so the gated REST
         # endpoints under test answer 200 instead of 503 on a fresh database.
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
 
     def test_01_session_auth_on_models_endpoint(self):
         """Session-authenticated user can access /mcp/models."""

@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 """Point striped companies at the module's local striped layout."""
-from odoo.upgrade import util
+try:
+    from odoo.upgrade import util
+    _env = util.env
+except ImportError:  # local development: the upgrade utils live on the platform
+    from odoo import SUPERUSER_ID, api
+
+    def _env(cr):
+        return api.Environment(cr, SUPERUSER_ID, {})
 
 
 def migrate(cr, version):
-    env = util.env(cr)
+    env = _env(cr)
     raw = env['ir.config_parameter'].sudo().get_param(
         'brand_report_layout.striped_company_ids')
     if not raw:

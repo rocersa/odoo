@@ -6,7 +6,6 @@ import odoo
 from odoo import _, modules
 from odoo.api import Environment
 from odoo.http import request
-from odoo.modules.registry import Registry
 
 _logger = logging.getLogger(__name__)
 
@@ -19,26 +18,21 @@ _logger = logging.getLogger(__name__)
 # propagates to every worker on the next request.
 
 
-def clear_mcp_caches() -> None:
-    """Invalidate the @ormcache backing the global MCP switches.
+def clear_mcp_caches(env=None) -> None:
+    """Invalidate the @ormcache backing the MCP switches.
 
-    ``is_mcp_enabled`` / ``is_oauth_enabled`` / ``get_allowed_origins`` (and the
-    per-model gates) live in the registry's ``default`` ormcache pool. Production
-    config writes flush it via ``registry.clear_cache()`` on the writing env
-    (res.config.settings.set_values / mcp.enabled.model._invalidate_mcp_caches),
-    which also signals the other workers. This helper does the same for a direct
-    ``ir.config_parameter`` write -- or a test toggling a param outside those
-    paths. It clears the bound request's registry first (the one actually serving
-    this request), then every loaded registry as a fallback for a request-less
-    caller (e.g. a test ``setUp``). Clearing the whole ``default`` pool mirrors
-    what that write-side invalidation already does.
+    Odoo 20 keeps ormcache entries on the transaction, so callers pass the
+    environment whose cache should be flushed (tests pass ``self.env``); a bound
+    request is used when no environment is given. Both the default and the
+    ``stable`` cache subsets hold MCP gates.
     """
-    try:
-        request.env.registry.clear_cache()
-    except Exception:  # noqa: BLE001 - no bound request (e.g. test setUp)
-        pass
-    for registry in list(Registry.registries.values()):
-        registry.clear_cache()
+    if env is None:
+        try:
+            env = request.env
+        except Exception:  # noqa: BLE001 - no bound request
+            return
+    env.transaction.invalidate_ormcache('default')
+    env.transaction.invalidate_ormcache('stable')
 
 
 def sanitize_model_name(model_name: str) -> str:
@@ -446,7 +440,7 @@ def get_system_info(env: Environment) -> Dict[str, Union[str, int]]:
             env["ir.default"].sudo().get("res.partner", "lang")
         )  # A common place for default lang
     if not lang:
-        lang = env["ir.config_parameter"].sudo().get_param("base.language", "en_US")
+        lang = env["ir.config_parameter"].sudo().get_str("base.language", "en_US")
 
     enabled_mcp_models_count = 0
     if is_mcp_enabled():

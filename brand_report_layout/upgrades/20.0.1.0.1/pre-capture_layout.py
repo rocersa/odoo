@@ -5,11 +5,18 @@ Odoo 20 deletes web.external_layout_striped. Capture the companies using it
 before the core upgrade removes the view, then point them at our local copy in
 the post script.
 """
-from odoo.upgrade import util
+try:
+    from odoo.upgrade import util
+    _env = util.env
+except ImportError:  # local development: the upgrade utils live on the platform
+    from odoo import SUPERUSER_ID, api
+
+    def _env(cr):
+        return api.Environment(cr, SUPERUSER_ID, {})
 
 
 def migrate(cr, version):
-    env = util.env(cr)
+    env = _env(cr)
     old_view = env.ref('web.external_layout_striped', raise_if_not_found=False)
     if not old_view:
         return

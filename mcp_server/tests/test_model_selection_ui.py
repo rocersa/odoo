@@ -1,4 +1,5 @@
 from odoo.tests.common import HttpCase, tagged
+from .common import McpHttpCase
 
 from .test_helpers import create_test_user
 
@@ -6,7 +7,7 @@ TEST_PASSWORD = "a_safe_test_password_for_mcp"  # nosec
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestModelSelectionUI(HttpCase):
+class TestModelSelectionUI(McpHttpCase):
     """Test the MCP model selection UI."""
 
     def setUp(self):

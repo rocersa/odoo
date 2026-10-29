@@ -11,7 +11,7 @@ Two auth surfaces are pinned here:
 Plus the wizard plumbing that lets users mint such keys: the ``mcp_api_key_scope``
 context flag flows through the overridden ``_generate`` (TransactionCase), and the
 ``scope_mode`` field on the standard "New API Key" wizard drives it through the
-``@check_identity`` gate (HttpCase).
+``@check_identity`` gate (McpHttpCase).
 
 Mirrors the HttpCase + ``_generate`` key-minting harness of ``test_mcp_protocol``
 and ``test_authentication``.
@@ -23,8 +23,9 @@ from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from odoo.http import _request_stack
+from odoo.http import request_var
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
 from ..controllers import auth, rate_limiting, utils
 from .test_helpers import create_test_user
@@ -34,12 +35,12 @@ PREFERRED_PROTOCOL_VERSION = "2025-11-25"
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestApiKeyScope(common.HttpCase):
+class TestApiKeyScope(McpHttpCase):
     """``mcp``-scoped and NULL-scope keys at the ``/mcp`` bearer door."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
@@ -53,21 +54,21 @@ class TestApiKeyScope(common.HttpCase):
         env_as_user = self.env(user=self.mcp_user)
         expiration = datetime.now() + timedelta(days=30)
         # A key minted with the dedicated ``mcp`` scope...
-        self.mcp_key = env_as_user["res.users.apikeys"]._generate(
+        self.mcp_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "mcp", "MCP Scoped Key", expiration
         )
         # ...and a legacy NULL/global key (backward-compat wildcard).
-        self.null_key = env_as_user["res.users.apikeys"]._generate(
+        self.null_key = env_as_user["res.users.apikeys"].sudo()._generate(
             None, "Legacy Null Scope Key", expiration
         )
         # ...and an explicit ``rpc``-scope key (general RPC access).
-        self.rpc_key = env_as_user["res.users.apikeys"]._generate(
+        self.rpc_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "RPC Scoped Key", expiration
         )
 
         # Enable MCP globally and drop any stale cached toggle value.
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
-        utils.clear_mcp_caches()
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
+        utils.clear_mcp_caches(self.env)
 
     def _post_rpc(self, body, api_key):
         """POST a JSON-RPC ``body`` dict to ``/mcp`` with a bearer key."""
@@ -101,8 +102,8 @@ class TestApiKeyScope(common.HttpCase):
             body["result"]["protocolVersion"], PREFERRED_PROTOCOL_VERSION
         )
 
-    def test_null_scope_key_still_authenticates_on_rpc(self):
-        """Regression: a NULL-scope key keeps authenticating on ``/mcp``."""
+    def test_legacy_scope_key_still_authenticates_on_rpc(self):
+        """A key minted without an explicit scope stores ``rpc`` and works."""
         response = self._post_rpc(
             {"jsonrpc": "2.0", "id": 2, "method": "ping"},
             api_key=self.null_key,
@@ -145,10 +146,10 @@ class TestApiKeyScope(common.HttpCase):
         self.assertEqual(response.status_code, 401)
         self.assertFalse(response.json()["success"])
 
-    def test_rpc_and_null_keys_still_authenticate_on_legacy_rest_route(self):
+    def test_rpc_and_legacy_keys_still_authenticate_on_legacy_rest_route(self):
         """Regression pin: ``rpc`` + NULL/global keys keep authenticating on the
         same legacy REST route the ``mcp`` key is now rejected on."""
-        for label, key in (("rpc", self.rpc_key), ("null", self.null_key)):
+        for label, key in (("rpc", self.rpc_key), ("legacy", self.null_key)):
             response = self._get_rest("/mcp/models", key)
             self.assertEqual(
                 response.status_code,
@@ -204,23 +205,31 @@ class TestApiKeyScopeGenerate(common.TransactionCase):
         )._generate(None, "ctx mcp key", expiration)
         self.assertEqual(self._latest_key_scope(), "mcp")
 
-    def test_generate_without_context_flag_stores_null_scope(self):
-        """Without the context flag, ``_generate(None, ...)`` stores a NULL scope."""
-        expiration = datetime.now() + timedelta(days=30)
-        self.env["res.users.apikeys"]._generate(None, "ctx null key", expiration)
-        self.assertFalse(self._latest_key_scope())
+    def test_generate_without_context_flag_stores_rpc_scope(self):
+        """Without the context flag, ``_generate(None, ...)`` stores ``rpc``.
 
-    def test_generate_explicit_scope_arg_wins_over_context_flag(self):
-        """An explicit ``scope`` arg overrides the ``mcp_api_key_scope`` context flag."""
+        Odoo 20 matches the scope exactly, so a NULL/global key would not
+        authenticate anywhere.
+        """
+        expiration = datetime.now() + timedelta(days=30)
+        self.env["res.users.apikeys"].sudo()._generate(None, "ctx null key", expiration)
+        self.assertEqual(self._latest_key_scope(), "rpc")
+
+    def test_context_flag_wins_over_default_scope_arg(self):
+        """The ``mcp_api_key_scope`` context wins over the wizard's default ``rpc``.
+
+        Odoo 20's API-key wizard passes ``description.scope`` (``rpc`` by
+        default), so the context flag is what distinguishes MCP-only keys.
+        """
         expiration = datetime.now() + timedelta(days=30)
         self.env["res.users.apikeys"].with_context(
             mcp_api_key_scope="mcp"
         )._generate("rpc", "explicit-wins", expiration)
-        self.assertEqual(self._latest_key_scope(), "rpc")
+        self.assertEqual(self._latest_key_scope(), "mcp")
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestApiKeyScopeWizard(common.HttpCase):
+class TestApiKeyScopeWizard(McpHttpCase):
     """The wizard ``make_key`` stores the scope chosen via ``scope_mode``.
 
     ``make_key`` is ``@check_identity``-gated and hard-requires an HTTP request, so
@@ -249,10 +258,13 @@ class TestApiKeyScopeWizard(common.HttpCase):
         fake_req = SimpleNamespace(
             session={"identity-check-last": time.time()},
             env=self.env,
-            httprequest=SimpleNamespace(environ={"REMOTE_ADDR": "127.0.0.1"}),
+            httprequest=SimpleNamespace(
+                environ={"REMOTE_ADDR": "127.0.0.1"},
+                url_root="http://localhost",
+            ),
         )
-        _request_stack.push(fake_req)
-        self.addCleanup(_request_stack.pop)
+        token = request_var.set(fake_req)
+        self.addCleanup(request_var.reset, token)
         wizard = (
             self.env["res.users.apikeys.description"]
             .with_user(self.wizard_user)
@@ -291,6 +303,6 @@ class TestApiKeyScopeWizard(common.HttpCase):
         """``scope_mode="mcp"`` -> the created key row has scope ``mcp``."""
         self.assertEqual(self._run_make_key("mcp"), "mcp")
 
-    def test_wizard_global_mode_stores_null_scope(self):
-        """``scope_mode="global"`` -> the created key row has a NULL scope."""
-        self.assertFalse(self._run_make_key("global"))
+    def test_wizard_global_mode_stores_rpc_scope(self):
+        """``scope_mode="global"`` -> the created key row has the ``rpc`` scope."""
+        self.assertEqual(self._run_make_key("global"), "rpc")

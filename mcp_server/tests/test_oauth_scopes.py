@@ -30,6 +30,7 @@ from urllib.parse import parse_qsl, urlsplit
 
 from odoo import fields
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
 from ..controllers import mcp, oauth_server, rate_limiting, utils
 from .test_helpers import create_test_user, users_groups_field
@@ -37,12 +38,12 @@ from .test_oauth import _code_challenge, _sha256_hex
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestOAuthScopes(common.HttpCase):
+class TestOAuthScopes(McpHttpCase):
     """OAuth ``mcp:read`` / ``mcp:write`` scope grant + request-time enforcement."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Module-level limiters survive the per-test rollback; reset them so a
         # stale count from a sibling test cannot trip the cap here.
         rate_limiting._api_limiter.clear()
@@ -84,8 +85,8 @@ class TestOAuthScopes(common.HttpCase):
         self.redirect_uri = "http://127.0.0.1:8765/callback"
 
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
-        params.set_param("mcp_server.enable_oauth", "True")
+        params.set_str("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enable_oauth", "True")
         # res.partner fully CRUD-enabled via MCP so the create tool reaches the
         # ORM once the scope gate allows it (and stays gated when it doesn't).
         self._enable_model(
@@ -95,7 +96,7 @@ class TestOAuthScopes(common.HttpCase):
             allow_write=True,
             allow_unlink=True,
         )
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         self.client_id = self._register_client()["client_id"]
 
@@ -327,7 +328,7 @@ class TestOAuthScopes(common.HttpCase):
         E500 -- indistinguishable from an internal failure. It must instead write an
         ``mcp.log`` row with ``event_type='permission_denied'`` for the denied tool.
         """
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.enable_logging", "True"
         )
         access_token = self._run_flow(grant_write=False)["access_token"]
@@ -632,7 +633,7 @@ class TestOAuthScopes(common.HttpCase):
     # ------------------------------------------------------------------
     def test_api_key_auth_is_ungated(self):
         """An API key stashes no scope: write tools stay listed and callable."""
-        api_key = self.env(user=self.user)["res.users.apikeys"]._generate(
+        api_key = self.env(user=self.user)["res.users.apikeys"].sudo()._generate(
             "rpc", "Scope Test Key", fields.Datetime.now() + timedelta(days=30)
         )
         self.assertIn("create_record", self._list_tool_names(api_key))

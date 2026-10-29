@@ -110,7 +110,8 @@ class McpEnabledModel(models.Model):
         A disabled model (or a flipped master switch) stops being served
         everywhere on the next request, not after a TTL.
         """
-        self.env.registry.clear_cache()
+        self.env.transaction.invalidate_ormcache('default')
+        self.env.transaction.invalidate_ormcache('stable')
 
     # ------------------------------------------------------------------
     # Global on/off switches (@ormcache-d, cross-worker-invalidated)
@@ -131,7 +132,7 @@ class McpEnabledModel(models.Model):
         return (
             self.env["ir.config_parameter"]
             .sudo()  # sudo: admin-managed global enable switch, not user data
-            .get_param("mcp_server.enabled", "False")
+            .get_str("mcp_server.enabled", "False")
             == "True"
         )
 
@@ -142,7 +143,7 @@ class McpEnabledModel(models.Model):
         return (
             self.env["ir.config_parameter"]
             .sudo()  # sudo: admin-managed OAuth enable switch, not user data
-            .get_param("mcp_server.enable_oauth", "True")
+            .get_str("mcp_server.enable_oauth", "True")
             == "True"
         )
 
@@ -158,7 +159,7 @@ class McpEnabledModel(models.Model):
         raw = (
             self.env["ir.config_parameter"]
             .sudo()  # sudo: admin-managed system param, not user data
-            .get_param("mcp_server.allowed_origins", "")
+            .get_str("mcp_server.allowed_origins", "")
         )
         return tuple(
             entry.strip().rstrip("/").lower()

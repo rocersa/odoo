@@ -27,6 +27,7 @@ from unittest.mock import patch
 
 from odoo.exceptions import AccessError, MissingError
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
 from ..controllers import rate_limiting, utils
 from ..models.mcp_tools_read import DEFAULT_LIMIT, MAX_LIMIT
@@ -51,12 +52,12 @@ READ_TOOL_NAMES = {
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMcpReadTools(common.HttpCase):
+class TestMcpReadTools(McpHttpCase):
     """Native MCP read tools + resources on ``/mcp``."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Reset the shared in-memory rate-limit cache for test independence.
         rate_limiting._api_limiter.clear()
 
@@ -122,18 +123,18 @@ class TestMcpReadTools(common.HttpCase):
         )
 
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enabled", "True")
         # Logging on so the resources/read audit-row test can assert the
         # persisted mcp.log entry.
-        params.set_param("mcp_server.enable_logging", "True")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.enable_logging", "True")
+        utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # Fixture helpers
     # ------------------------------------------------------------------
     def _mint_key(self, user, name):
         """Mint an ``rpc``-scope API key for ``user``."""
-        return self.env(user=user)["res.users.apikeys"]._generate(
+        return self.env(user=user)["res.users.apikeys"].sudo()._generate(
             "rpc", name, datetime.now() + timedelta(days=30)
         )
 
@@ -273,9 +274,9 @@ class TestMcpReadTools(common.HttpCase):
         inside the rolled-back test transaction, so no teardown restore is needed.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.default_limit", "3")
-        params.set_param("mcp_server.max_smart_fields", "5")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.default_limit", "3")
+        params.set_str("mcp_server.max_smart_fields", "5")
+        utils.clear_mcp_caches(self.env)
 
         # Ensure there are more partners than the lowered default page size.
         self.env["res.partner"].create(
@@ -305,8 +306,8 @@ class TestMcpReadTools(common.HttpCase):
         must clamp back to the module defaults instead.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.default_limit", "0")
-        params.set_param("mcp_server.max_limit", "0")
+        params.set_str("mcp_server.default_limit", "0")
+        params.set_str("mcp_server.max_limit", "0")
         mixin = self.env["mcp.mixin"]
 
         # An explicit (even huge) limit is capped to MAX_LIMIT, never left at 0.
@@ -327,8 +328,8 @@ class TestMcpReadTools(common.HttpCase):
         source, so the promise cannot drift from the behaviour.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.default_limit", "500")
-        params.set_param("mcp_server.max_limit", "100")
+        params.set_str("mcp_server.default_limit", "500")
+        params.set_str("mcp_server.max_limit", "100")
         mixin = self.env["mcp.mixin"]
 
         # No / zero / negative limit uses the default, clamped down to the max.
@@ -483,7 +484,7 @@ class TestMcpReadTools(common.HttpCase):
     def test_get_record_large_x2many_collapses_to_count_and_hint(self):
         """An x2many collection above the cap collapses to a count + search hint."""
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.max_related_items", "2")
+        params.set_str("mcp_server.max_related_items", "2")
         parent = self.env["res.partner"].create({"name": "Collapse Parent"})
         self.env["res.partner"].create(
             [{"name": f"Child {i}", "parent_id": parent.id} for i in range(3)]
@@ -513,7 +514,7 @@ class TestMcpReadTools(common.HttpCase):
         # Expose the tag model so the collapse still offers a search hint
         # (the hint is suppressed only for non-enabled models).
         self._enable_model("base.model_res_partner_category", allow_read=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         tag = self.env["res.partner.category"].create({"name": "VIP"})
         partner = self.env["res.partner"].create(
             {"name": "Tagged Partner", "category_id": [(6, 0, tag.ids)]}
@@ -562,8 +563,8 @@ class TestMcpReadTools(common.HttpCase):
     def test_get_record_large_m2m_view_all_uses_id_list(self):
         """A collapsed many2many (no inverse field) hints with an id-in domain."""
         self._enable_model("base.model_res_partner_category", allow_read=True)
-        utils.clear_mcp_caches()
-        self.env["ir.config_parameter"].sudo().set_param(
+        utils.clear_mcp_caches(self.env)
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.max_related_items", "1"
         )
         tags = self.env["res.partner.category"].create([{"name": "M1"}, {"name": "M2"}])
@@ -584,8 +585,8 @@ class TestMcpReadTools(common.HttpCase):
     def test_get_record_x2many_hint_suppressed_when_relation_not_enabled(self):
         """A collapsed relation whose target isn't MCP-enabled says so, no hint."""
         self._disable_model("base.model_res_partner_category")
-        utils.clear_mcp_caches()
-        self.env["ir.config_parameter"].sudo().set_param(
+        utils.clear_mcp_caches(self.env)
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.max_related_items", "1"
         )
         tags = self.env["res.partner.category"].create([{"name": "N1"}, {"name": "N2"}])
@@ -613,7 +614,7 @@ class TestMcpReadTools(common.HttpCase):
         enabled" note instead of listing the names inline.
         """
         self._disable_model("base.model_res_partner_category")
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Default cap (3) applies -> a single tag is within the inline range, so
         # only the per-model gate (not the size check) can suppress the preview.
         tag = self.env["res.partner.category"].create({"name": "SecretTagLeak"})
@@ -870,7 +871,7 @@ class TestMcpReadTools(common.HttpCase):
         # Drop ir.attachment from the allow-list so only the res_model rule can
         # grant access; res.users stays disabled (from setUp).
         self._disable_model("base.model_ir_attachment")
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         attachment = (
             self.env["ir.attachment"]
@@ -895,7 +896,7 @@ class TestMcpReadTools(common.HttpCase):
 
         # Allowed once the attachment's parent model (res.users) is enabled.
         self._enable_model("base.model_res_users", allow_read=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         result = self._rpc_result("resources/read", {"uri": uri})
         entry = result["contents"][0]
         self.assertEqual(entry["uri"], uri)

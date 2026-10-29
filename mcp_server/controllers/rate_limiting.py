@@ -113,7 +113,7 @@ def is_rate_limiting_enabled():
     return (
         request.env["ir.config_parameter"]
         .sudo()  # sudo: read a global config flag, not user-scoped data.
-        .get_param("mcp_server.enable_rate_limiting", "True")
+        .get_str("mcp_server.enable_rate_limiting", "True")
         == "True"
     )
 
@@ -127,7 +127,7 @@ def get_request_limit():
         limit = int(
             request.env["ir.config_parameter"]
             .sudo()
-            .get_param("mcp_server.request_limit", DEFAULT_REQUEST_LIMIT)
+            .get_str("mcp_server.request_limit", DEFAULT_REQUEST_LIMIT)
         )
         # 0 means unlimited, don't enforce minimum
         if limit == 0:
