@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        One page per record. The PNG is already in the paper's orientation
+        One page per copy. The PNG is already in the paper's orientation
         (72 mm across the roll, 70 mm along the feed), so the page holds it at
         true size with no margins and no header.
 
@@ -11,24 +11,26 @@
     <template id="report_label">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <div class="article"
-                     t-att-data-oe-model="o._name"
-                     t-att-data-oe-id="o.id"
-                     t-att-data-oe-lang="o.env.context.get('lang')">
-                    <style>
-                        html, body, main, #wrapwrap { margin: 0 !important; padding: 0 !important; max-width: none !important; }
-                        body.container, body.o_body_pdf { margin: 0 !important; padding: 0 !important; max-width: none !important; }
-                        .article { margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; }
-                        .corten-label-page { width: 72mm; height: 70mm; margin: 0; padding: 0; overflow: hidden; }
-                        .corten-label-page img { width: 72mm; height: 70mm; display: block; }
-                    </style>
-                    <div class="corten-label-page"
-                         t-attf-style="page-break-after:{{ 'always' if not o_last else 'auto' }};">
-                        <img t-if="o.corten_label_png"
-                             t-att-src="'data:image/png;base64,' + o.corten_label_png"
-                             alt="Magnet label"/>
+                <t t-set="n" t-value="(copies or {}).get(o.id, 1) or 1"/>
+                <t t-foreach="[o] * n" t-as="cell">
+                    <div class="article"
+                         t-att-data-oe-model="cell._name"
+                         t-att-data-oe-id="cell.id"
+                         t-att-data-oe-lang="cell.env.context.get('lang')">
+                        <style>
+                            html, body, main, #wrapwrap { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+                            body.container, body.o_body_pdf { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+                            .article { margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; }
+                            .corten-label-page { width: 72mm; height: 70mm; margin: 0; padding: 0; overflow: hidden; }
+                            .corten-label-page img { width: 72mm; height: 70mm; display: block; }
+                        </style>
+                        <div class="corten-label-page">
+                            <img t-if="cell.corten_label_png"
+                                 t-att-src="'data:image/png;base64,' + cell.corten_label_png"
+                                 alt="Magnet label"/>
+                        </div>
                     </div>
-                </div>
+                </t>
             </t>
         </t>
     </template>

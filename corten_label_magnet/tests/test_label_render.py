@@ -1,4 +1,4 @@
-"""Label renderer and report wiring. Runs on the odoo.sh staging build."""
+"""Label renderer, report model and wizard wiring. Runs on the odoo.sh build."""
 import base64
 import io
 
@@ -6,7 +6,12 @@ from PIL import Image
 
 from odoo.tests import TransactionCase, tagged
 
-from ..tools.label_render import derive_location, encode_code128b, render_png
+from ..tools.label_render import (
+    barcode_fits,
+    derive_location,
+    encode_code128b,
+    render_png,
+)
 
 
 @tagged("post_install", "-at_install")
@@ -15,6 +20,11 @@ class TestLabelRender(TransactionCase):
         modules = encode_code128b("AUC/UCC/R01/B03-L2")
         self.assertEqual((len(modules) - 13) % 11, 0)
         self.assertTrue(modules.endswith("1100011101011"))
+
+    def test_barcode_fit_guard(self):
+        self.assertTrue(barcode_fits("AUC/UCC/R01/B03-L2"))
+        self.assertTrue(barcode_fits("P0001234"))
+        self.assertFalse(barcode_fits("CorRetKitL-Int-S-10015-2215-900-ntc-tra"))
 
     def test_location_lines(self):
         self.assertEqual(derive_location("AUC/UCC/R01/B03-L2"), ("UCC / R01", "B03-L2"))
@@ -32,7 +42,6 @@ class TestLabelRender(TransactionCase):
             "usage": "internal",
             "barcode": "AUC/UCC/R01/B03-L2",
         })
-        self.assertTrue(location.corten_label_png)
         self.assertTrue(base64.b64decode(location.corten_label_png))
 
         product = self.env["product.product"].create({
@@ -41,11 +50,48 @@ class TestLabelRender(TransactionCase):
             "type": "product",
         })
         self.assertTrue(product.corten_label_png)
+        self.assertTrue(product.product_tmpl_id.corten_label_png)
 
-    def test_report_is_bound(self):
-        for model in ("product.template", "product.product", "stock.location"):
-            actions = self.env["ir.actions.report"].search([
-                ("binding_model_id.model", "=", model),
-                ("report_name", "=", "corten_label_magnet.report_label"),
-            ])
-            self.assertTrue(actions, model)
+    def test_location_report_is_bound(self):
+        actions = self.env["ir.actions.report"].search([
+            ("binding_model_id.model", "=", "stock.location"),
+            ("report_name", "=", "corten_label_magnet.report_label"),
+        ])
+        self.assertEqual(len(actions), 1)
+
+    def test_wizard_offers_the_magnet_format(self):
+        field = self.env["product.label.layout"]._fields["print_format"]
+        self.assertIn("corten_magnet", field.selection)
+
+        product = self.env["product.product"].create({
+            "name": "Flamed Corten Edging 1000",
+            "default_code": "CT-EDG-1000",
+            "type": "product",
+        })
+        wizard = self.env["product.label.layout"].create({
+            "print_format": "corten_magnet",
+            "custom_quantity": 2,
+            "product_ids": [(6, 0, product.ids)],
+        })
+        xml_id, data = wizard._prepare_report_data()
+        self.assertEqual(xml_id, "corten_label_magnet.action_corten_label_location")
+        self.assertEqual(data["quantity_by_product"][product.id], 2)
+
+    def test_report_model_resolves_products_and_locations(self):
+        product = self.env["product.product"].create({
+            "name": "Flamed Corten Edging 1000",
+            "default_code": "CT-EDG-1000",
+            "type": "product",
+        })
+        report = self.env["report.corten_label_magnet.report_label"]
+        values = report._get_report_values([], {
+            "active_model": "product.product",
+            "quantity_by_product": {product.id: 3},
+        })
+        self.assertEqual(values["docs"], product)
+        self.assertEqual(values["copies"][product.id], 3)
+
+        location = self.env["stock.location"].create({
+            "name": "B03-L2", "usage": "internal"})
+        values = report._get_report_values([location.id], {})
+        self.assertEqual(values["docs"], location)
