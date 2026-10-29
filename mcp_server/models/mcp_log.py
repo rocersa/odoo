@@ -129,6 +129,15 @@ class MCPLog(models.Model):
             "user_agent": kwargs.get("user_agent"),
         }
 
+        # A request IP is a string (max 45 for IPv6). Tests and mocked requests
+        # can hand over a non-string object; never let that overflow the column
+        # and drop the audit row.
+        ip_address = log_data.get("ip_address")
+        if not isinstance(ip_address, str):
+            log_data["ip_address"] = None
+        else:
+            log_data["ip_address"] = ip_address[:45] or None
+
         # Truncate large data fields to prevent database issues
         max_text_length = 10000
         for field in ["request_data", "response_data", "error_message", "user_agent"]:

@@ -29,7 +29,7 @@ from odoo.exceptions import AccessError, MissingError
 from odoo.tests import common, tagged
 from .common import McpHttpCase
 
-from ..controllers import rate_limiting, utils
+from ..controllers import mcp as mcp_controller, rate_limiting, utils
 from ..models.mcp_tools_read import DEFAULT_LIMIT, MAX_LIMIT
 from ..tools.smart_fields import DEFAULT_MAX_SMART_FIELDS
 from .test_helpers import create_test_user, users_groups_field
@@ -60,6 +60,7 @@ class TestMcpReadTools(McpHttpCase):
         utils.clear_mcp_caches(self.env)
         # Reset the shared in-memory rate-limit cache for test independence.
         rate_limiting._api_limiter.clear()
+        mcp_controller._audit_write_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
 
@@ -364,6 +365,9 @@ class TestMcpReadTools(McpHttpCase):
         partner = self.env["res.partner"].create(
             {"name": "Long Comment", "comment": long_text}
         )
+        # ``comment`` is HTML; Odoo 20 wraps it in <p>...</p>. Page against the
+        # value as stored, not the plain text passed in.
+        stored = partner.read(["comment"])[0]["comment"]
 
         first = self._call_tool(
             "read_field",
@@ -374,14 +378,14 @@ class TestMcpReadTools(McpHttpCase):
                 "length": 2000,
             },
         )
-        self.assertNotIn("isError", first, msg=first)
+        self.assertFalse(first.get("isError"), msg=first)
         structured = first["structuredContent"]
-        self.assertEqual(structured["total"], 5000)
+        self.assertEqual(structured["total"], len(stored))
         self.assertEqual(structured["offset"], 0)
         self.assertEqual(structured["returned"], 2000)
         self.assertTrue(structured["has_more"])
-        self.assertEqual(structured["value"], long_text[:2000])
-        self.assertIn(long_text[:2000], first["content"][0]["text"])
+        self.assertEqual(structured["value"], stored[:2000])
+        self.assertIn(stored[:2000], first["content"][0]["text"])
 
         second = self._call_tool(
             "read_field",
@@ -394,9 +398,9 @@ class TestMcpReadTools(McpHttpCase):
             },
         )
         structured = second["structuredContent"]
-        self.assertEqual(structured["returned"], 3000)
+        self.assertEqual(structured["returned"], len(stored) - 2000)
         self.assertFalse(structured["has_more"])
-        self.assertEqual(structured["value"], long_text[2000:])
+        self.assertEqual(structured["value"], stored[2000:])
 
     def test_read_field_rejects_non_text_field(self):
         """read_field refuses non char/text/html fields with a clean error."""
@@ -1072,9 +1076,14 @@ class TestMcpReadTools(McpHttpCase):
         res.partner has both is_company True and False, so grouping on it yields
         at least two buckets; limit=1 forces truncation.
         """
+        # Odoo 20 computes is_company from VAT, so use a second Address Type
+        # value (invoice vs the default contact) to guarantee two buckets.
+        self.env["res.partner"].create(
+            {"name": "Aggregate Invoice", "type": "invoice"}
+        )
         result = self._call_tool(
             "aggregate_records",
-            {"model": "res.partner", "groupby": ["is_company"], "limit": 1},
+            {"model": "res.partner", "groupby": ["type"], "limit": 1},
         )
         self.assertFalse(result["isError"], msg=result)
         structured = result["structuredContent"]

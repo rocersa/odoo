@@ -8,6 +8,8 @@ global enable gate, and JSON-RPC error rendering. Mirrors the HttpCase +
 
 import json
 import time
+
+import requests
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -638,10 +640,18 @@ class TestMcpProtocol(McpHttpCase):
         self.assertIsNone(payload["id"])
 
     @mute_logger("odoo.http", "werkzeug")
-    def test_oversized_body_is_refused_with_413(self):
-        """A body over the per-route cap is refused before it is parsed (413)."""
+    def test_oversized_body_is_refused(self):
+        """A body over the per-route cap is refused before it is parsed.
+
+        With a body this size the server can reject on Content-Length and close
+        the socket while the client is still writing, which ``requests``
+        surfaces as a connection reset; a 413 is the other valid outcome.
+        """
         oversized = "0" * (MCP_MAX_CONTENT_LENGTH + 1)
-        response = self._post_rpc(oversized)
+        try:
+            response = self._post_rpc(oversized)
+        except requests.exceptions.ConnectionError:
+            return
         self.assertEqual(response.status_code, 413)
 
     def test_unsupported_protocol_version_header_returns_400(self):

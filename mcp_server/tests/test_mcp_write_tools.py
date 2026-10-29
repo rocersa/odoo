@@ -39,7 +39,7 @@ from odoo.tests import common, tagged
 from .common import McpHttpCase
 from odoo.tools import mute_logger
 
-from ..controllers import rate_limiting, utils
+from ..controllers import mcp as mcp_controller, rate_limiting, utils
 from .test_helpers import create_test_user, users_groups_field
 
 
@@ -51,6 +51,7 @@ class TestMcpWriteTools(McpHttpCase):
         super().setUp()
         utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
+        mcp_controller._audit_write_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
 
@@ -782,6 +783,7 @@ class TestMcpWriteTools(McpHttpCase):
     def test_rate_limit_primitives_trip_at_threshold(self):
         """record_api_request + check_rate_limit deny once the limit is reached."""
         rate_limiting._api_limiter.clear()
+        mcp_controller._audit_write_limiter.clear()
         uid = self.mcp_user.id
         dbname = self.env.cr.dbname
         self.env["ir.config_parameter"].sudo().set_str(

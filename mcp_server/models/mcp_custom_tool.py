@@ -233,7 +233,28 @@ class McpCustomTool(models.Model):
             # KeyError out of the whole tools/list when this tool is filtered.
             return False
         # Empty-groups fallback: the caller must have write access to the model.
-        return self.env[model].has_access("write")
+        return self._has_model_write(model)
+
+    def _has_model_write(self, model):
+        """Whether the caller has a model-wide write grant.
+
+        ``has_access('write')`` alone is too coarse on Odoo 20: every internal
+        user carries a ``res.partner`` self-write rule (``[('id','=',user.
+        partner_id.id)]``), so ``has_access`` would expose an ungrouped tool to
+        a user who can only edit their own contact. Count only access rows for
+        the caller's groups whose operation includes write and whose domain is
+        empty. On Odoo 19 (no ``ir.access`` model) fall back to ``has_access``.
+        """
+        if 'ir.access' not in self.env:
+            return self.env[model].has_access("write")
+        accesses = self.env['ir.access'].sudo().search([
+            ('model_id.model', '=', model),
+            ('group_id', 'in', self.env.user.all_group_ids.ids),
+        ])
+        return any(
+            'u' in (access.operation or '') and not access.domain
+            for access in accesses
+        )
 
     def _run_tool(self, arguments):
         """Execute the wrapped action as the calling user; return its result.
