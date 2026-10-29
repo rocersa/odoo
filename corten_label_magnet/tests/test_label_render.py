@@ -1,5 +1,4 @@
 """Label renderer, report model and wizard wiring. Runs on the odoo.sh build."""
-import base64
 import io
 
 from PIL import Image
@@ -42,15 +41,15 @@ class TestLabelRender(TransactionCase):
             "usage": "internal",
             "barcode": "AUC/UCC/R01/B03-L2",
         })
-        self.assertTrue(base64.b64decode(location.corten_label_png))
+        self.assertTrue(location.corten_label_png.startswith(b"\x89PNG"))
 
         product = self.env["product.product"].create({
             "name": "Flamed Corten Edging 1000",
             "default_code": "CT-EDG-1000",
             "type": "product",
         })
-        self.assertTrue(product.corten_label_png)
-        self.assertTrue(product.product_tmpl_id.corten_label_png)
+        self.assertTrue(product.corten_label_png.startswith(b"\x89PNG"))
+        self.assertTrue(product.product_tmpl_id.corten_label_png.startswith(b"\x89PNG"))
 
     def test_location_report_is_bound(self):
         actions = self.env["ir.actions.report"].search([

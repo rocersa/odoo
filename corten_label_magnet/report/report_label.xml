@@ -26,7 +26,7 @@
                         </style>
                         <div class="corten-label-page">
                             <img t-if="cell.corten_label_png"
-                                 t-att-src="'data:image/png;base64,' + cell.corten_label_png"
+                                 t-att-src="image_data_uri(cell.corten_label_png)"
                                  alt="Magnet label"/>
                         </div>
                     </div>
