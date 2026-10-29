@@ -1,6 +1,7 @@
 """Shared compute for the label image field, so every model renders the same way."""
 from __future__ import annotations
 
+import base64
 import logging
 
 from odoo import api, models
@@ -25,6 +26,6 @@ class CortenLabelImage(models.AbstractModel):
 
     @api.model
     def get_label_image(self, kind, name, code, detail=None):
-        # Odoo 19 Binary fields carry raw bytes (not base64); QWeb's
-        # image_data_uri() turns them into a data URI.
-        return label_image(kind, name, code, detail)
+        # Odoo 19 Binary fields hold the base64 payload as bytes (a str is
+        # encoded on assignment); QWeb's image_data_uri() expects that form.
+        return base64.b64encode(label_image(kind, name, code, detail)).decode("ascii")
