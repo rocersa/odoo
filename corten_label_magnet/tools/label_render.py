@@ -185,12 +185,23 @@ def _barcode(draw, data, x_mm, y_mm, w_mm, h_mm, dpi):
                            fill=INK)
 
 
+RACK_LEAF = re.compile(r"^[A-Za-z]\d+-L\d+$")
+
+
 def derive_location(code: str):
-    """UCC / R01 + B03-L2 from AUC/UCC/R01/B03-L2."""
-    parts = [p for p in re.split(r"[/\s]+", code.strip()) if p]
-    if len(parts) >= 2:
-        return " / ".join(parts[1:-1]), parts[-1]
-    return "", parts[0] if parts else code
+    """Split a location path into (small line, big line).
+
+    Only "/" separates path segments: the leaf name may itself contain spaces
+    ("Unit 1"). The small line is only used for a rack address, where the
+    parent segments identify the run; a plain leaf shows its name alone.
+    """
+    parts = [p for p in code.strip().split("/") if p]
+    if not parts:
+        return "", code
+    big = parts[-1]
+    if len(parts) >= 3 and RACK_LEAF.match(big):
+        return " / ".join(parts[1:-1]), big
+    return "", big
 
 
 def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM):
