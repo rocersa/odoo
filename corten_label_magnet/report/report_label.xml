@@ -18,11 +18,14 @@
                          t-att-data-oe-id="cell.id"
                          t-att-data-oe-lang="cell.env.context.get('lang')">
                         <style>
-                            html, body, main, #wrapwrap { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+                            html, body, main, #wrapwrap { margin: 0 !important; padding: 0 !important; max-width: none !important; line-height: 0 !important; overflow: hidden; }
                             body.container, body.o_body_pdf { margin: 0 !important; padding: 0 !important; max-width: none !important; }
-                            .article { margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; }
+                            .article { margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; page-break-inside: avoid; }
                             .corten-label-page { width: 72mm; height: 70mm; margin: 0; padding: 0; overflow: hidden; }
-                            .corten-label-page img { width: 72mm; height: 70mm; display: block; }
+                            /* Inset the artwork by 0.5 mm a side: an exact-page-height
+                               image rounds to one device pixel over and spills a
+                               blank second page out of wkhtmltopdf. */
+                            .corten-label-page img { width: 71mm; height: 69mm; margin: 0.5mm; display: block; vertical-align: top; }
                         </style>
                         <div class="corten-label-page">
                             <img t-if="cell.corten_label_png"

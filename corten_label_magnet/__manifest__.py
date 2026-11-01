@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Corten Magnet Label",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.7",
     "summary": "Print the magnetic C-channel label for a product or storage location",
     "description": """
 Magnetic label report
