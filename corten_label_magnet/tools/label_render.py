@@ -209,7 +209,9 @@ def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM)
     _tracked(d, right - tw, px(HEADER_Y_MM + 0.2, dpi), tag_txt, tag, 0.10, dpi)
 
     if kind == "location":
-        top, big = derive_location(code)
+        # The big lines are the location's address; the barcode payload may be
+        # a different string, so never derive the name from it.
+        top, big = derive_location(detail or code)
         if top:
             ftop = _fit(d, top, "IBMPlexMono-600.ttf", 4.2, content_w, dpi)
             d.text((m, px(13.4, dpi)), top, font=ftop, fill=INK)

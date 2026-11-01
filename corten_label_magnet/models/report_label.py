@@ -26,8 +26,9 @@ def _label_fields(record):
     if record._name == "product.template":
         return ("product", record.name,
                 record.barcode or record.default_code or "", record.default_code)
-    return ("location", record.complete_name or record.name,
-            record.barcode or record.complete_name or "", None)
+    return ("location", record.name,
+            record.barcode or record.complete_name or "",
+            record.complete_name or record.name)
 
 
 def label_values(env, docids, data, length_mm):
