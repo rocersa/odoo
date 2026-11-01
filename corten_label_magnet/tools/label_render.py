@@ -23,13 +23,15 @@ LABEL_W_MM = 70.0        # default along-strip length (reading orientation)
 LABEL_H_MM = 72.0
 MARGIN_MM = 3.0
 MARGIN_MM_RIGHT = 3.0
-BARCODE_H_MM = 12.0
+BARCODE_H_MM = 14.0
 HUMAN_H_MM = 4.4
 HEADER_Y_MM = 4.5
 QUIET_ZONE_MM = 1.6
-MAX_MODULE_MM = 0.36
-# Longest default_code in company-18 stock (2026-10-29): CorCnrJoiIntRol100-90-300
-CODE_REF_CHARS = 25
+MAX_MODULE_MM = 0.50
+# Product barcodes are standardised to P<id> (8 chars, e.g. P0002823).
+CODE_REF_CHARS = 8
+# The code line stops growing here; 8 characters fill the width well before it.
+CODE_MAX_CAP_MM = 7.0
 MIN_MODULE_MM = 0.19      # ~1.5 dots at 203 dpi: below this a scan is unreliable
 
 INK = (0, 0, 0)
@@ -224,8 +226,9 @@ def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM)
             # One size for every product code: the longest code in stock fills
             # the label width, so shorter codes are as large as they can be
             # without a per-label size change.
-            code_cap = _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
-                                      0.11, content_w, dpi)
+            code_cap = min(CODE_MAX_CAP_MM,
+                           _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
+                                          0.11, content_w, dpi))
             fdet = _fit(d, detail, "IBMPlexMono-600.ttf", code_cap, content_w, dpi)
             _tracked(d, m, px(32.4, dpi), detail, fdet, 0.08, dpi)
 
