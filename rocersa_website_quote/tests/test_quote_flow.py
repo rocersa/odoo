@@ -78,6 +78,17 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
         self.assertTrue(self.cart.is_rfq_from_website)
         self.assertEqual(self.cart.partner_id, self.env.user.partner_id)
 
+    def test_guest_quote_emails_customer_and_company(self):
+        self.website.company_id.sudo().write({"email": "company@example.com"})
+        self._submit()
+        mails = self.env["mail.mail"].sudo().search([
+            ("model", "=", "sale.order"),
+            ("res_id", "=", self.cart.id),
+        ])
+        recipients = {mail.email_to for mail in mails}
+        self.assertIn("guest@example.com", recipients)
+        self.assertIn("company@example.com", recipients)
+
     def test_cart_renders_quote_cta_and_guest_modal(self):
         self.website.sudo().write({"is_disable_checkout": True})
         self.cart.sudo().write({"access_token": "quote-test-token"})

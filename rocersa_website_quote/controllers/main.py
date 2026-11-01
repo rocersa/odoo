@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
 import re
 
 from odoo import _, http
 from odoo.exceptions import UserError
 from odoo.http import request
 
+_logger = logging.getLogger(__name__)
 _GCLID_RE = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 _REQUIRED_GUEST_FIELDS = ("name", "email", "street", "city", "zip", "country_id")
 
@@ -57,6 +59,35 @@ class WebsiteQuote(http.Controller):
             attribution["rfq_landing_page"] = landing[:255]
         return attribution
 
+    def _send_quote_emails(self, order):
+        """Email the customer and the website company (the current Gmail flow).
+
+        The eventual plan is to run the quote flow entirely in Odoo; until then
+        the staff copy goes to the website company email, like the generic
+        contact-us messages.
+        """
+        try:
+            customer = request.env.ref(
+                "rocersa_website_quote.mail_template_quote_received",
+                raise_if_not_found=False,
+            )
+            if customer and order.partner_id.email:
+                customer.sudo().send_mail(order.id, force_send=True)
+        except Exception:  # noqa: BLE001 - a mail failure must not fail the RFQ
+            _logger.exception("Customer quote-request email failed for %s", order.name)
+        try:
+            company_email = (
+                order.website_id.company_id.email or order.company_id.email
+            )
+            staff = request.env.ref(
+                "rocersa_website_quote.mail_template_quote_staff",
+                raise_if_not_found=False,
+            )
+            if staff and company_email:
+                staff.sudo().send_mail(order.id, force_send=True)
+        except Exception:  # noqa: BLE001 - a mail failure must not fail the RFQ
+            _logger.exception("Staff quote-request email failed for %s", order.name)
+
     @http.route(
         ["/shop/quote"],
         type="http",
@@ -75,6 +106,7 @@ class WebsiteQuote(http.Controller):
             # Guests use the cart modal; a direct visit has no contact details.
             return request.redirect("/shop/cart")
         order._apply_website_rfq(request.env.user.partner_id)
+        self._send_quote_emails(order)
         return request.render(
             "rocersa_website_quote.quote_thank_you", {"order": order}
         )
@@ -105,6 +137,7 @@ class WebsiteQuote(http.Controller):
                 self._attribution(post),
                 company=post.get("company_name"),
             )
+            self._send_quote_emails(order)
         except UserError as err:
             return request.render(
                 "rocersa_website_quote.quote_error", {"error": str(err)}

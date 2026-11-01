@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Operational note: the staff copy goes to the website company email for
+        now; the same Gmail flow as the generic contact-us messages. The
+        eventual plan is to run the quote flow entirely in Odoo.
+    -->
+    <data noupdate="1">
+        <record id="mail_template_quote_received" model="mail.template">
+            <field name="name">Website Quote Request: Customer</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">{{ object.company_id.name }} quote request {{ object.name }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or object.user_id.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email }}</field>
+            <field name="partner_to" eval="False"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="auto_delete" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>Hello <t t-out="object.partner_id.name or 'there'"/>,</p>
+                    <p>
+                        We have received your quote request
+                        <strong t-out="object.name"/>. Our team will review it
+                        and send your freight quote shortly.
+                    </p>
+                    <h3>Your details</h3>
+                    <p>
+                        <t t-out="object.partner_id.name or ''"/><br/>
+                        <t t-if="object.rfq_company"><t t-out="object.rfq_company"/><br/></t>
+                        <t t-if="object.partner_id.street"><t t-out="object.partner_id.street"/><br/></t>
+                        <t t-if="object.partner_id.street2"><t t-out="object.partner_id.street2"/><br/></t>
+                        <t t-if="object.partner_id.city"><t t-out="object.partner_id.city"/> </t>
+                        <t t-if="object.partner_id.zip"><t t-out="object.partner_id.zip"/></t>
+                        <t t-if="object.partner_id.country_id"><br/><t t-out="object.partner_id.country_id.name"/></t>
+                    </p>
+                    <t t-if="object.rfq_message">
+                        <h3>Your message</h3>
+                        <p t-out="object.rfq_message"/>
+                    </t>
+                    <h3>Your items</h3>
+                    <table style="border-collapse: collapse; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; border-bottom: 1px solid #ddd;">Product</th>
+                                <th style="text-align: right; border-bottom: 1px solid #ddd;">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="object.order_line.filtered(lambda line: not line.display_type)" t-as="line">
+                                <tr>
+                                    <td style="border-bottom: 1px solid #eee;" t-out="line.product_id.display_name"/>
+                                    <td style="text-align: right; border-bottom: 1px solid #eee;" t-out="line.product_uom_qty"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </field>
+        </record>
+
+        <record id="mail_template_quote_staff" model="mail.template">
+            <field name="name">Website Quote Request: Staff</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Quote request {{ object.name }} from {{ object.partner_id.name or 'website visitor' }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or object.user_id.email_formatted }}</field>
+            <field name="email_to">{{ object.website_id.company_id.email or object.company_id.email }}</field>
+            <field name="partner_to" eval="False"/>
+            <field name="use_default_to" eval="False"/>
+            <field name="auto_delete" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
+            <field name="body_html" type="html">
+                <div>
+                    <p>
+                        New website quote request <strong t-out="object.name"/>
+                        from <t t-out="object.partner_id.name or 'a website visitor'"/>.
+                    </p>
+                    <h3>Customer</h3>
+                    <p>
+                        <t t-out="object.partner_id.name or ''"/><br/>
+                        <t t-if="object.rfq_company"><t t-out="object.rfq_company"/><br/></t>
+                        <t t-if="object.partner_id.phone"><t t-out="object.partner_id.phone"/><br/></t>
+                        <t t-out="object.partner_id.email or ''"/><br/>
+                        <t t-if="object.partner_id.street"><t t-out="object.partner_id.street"/><br/></t>
+                        <t t-if="object.partner_id.street2"><t t-out="object.partner_id.street2"/><br/></t>
+                        <t t-if="object.partner_id.city"><t t-out="object.partner_id.city"/> </t>
+                        <t t-if="object.partner_id.zip"><t t-out="object.partner_id.zip"/></t>
+                        <t t-if="object.partner_id.state_id"><t t-out="object.partner_id.state_id.name"/></t>
+                        <t t-if="object.partner_id.country_id"><br/><t t-out="object.partner_id.country_id.name"/></t>
+                    </p>
+                    <t t-if="object.rfq_message">
+                        <h3>Customer message</h3>
+                        <p t-out="object.rfq_message"/>
+                    </t>
+                    <h3>Items</h3>
+                    <table style="border-collapse: collapse; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; border-bottom: 1px solid #ddd;">Product</th>
+                                <th style="text-align: right; border-bottom: 1px solid #ddd;">Qty</th>
+                                <th style="text-align: right; border-bottom: 1px solid #ddd;">Weight</th>
+                                <th style="text-align: right; border-bottom: 1px solid #ddd;">Unit</th>
+                                <th style="text-align: right; border-bottom: 1px solid #ddd;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="object.order_line.filtered(lambda line: not line.display_type)" t-as="line">
+                                <tr>
+                                    <td style="border-bottom: 1px solid #eee;" t-out="line.product_id.display_name"/>
+                                    <td style="text-align: right; border-bottom: 1px solid #eee;" t-out="line.product_uom_qty"/>
+                                    <td style="text-align: right; border-bottom: 1px solid #eee;" t-out="round(line.product_id.weight * line.product_uom_qty, 2)"/>
+                                    <td style="text-align: right; border-bottom: 1px solid #eee;" t-out="line.price_unit" t-options="{'widget': 'monetary', 'display_currency': object.currency_id}"/>
+                                    <td style="text-align: right; border-bottom: 1px solid #eee;" t-out="line.price_subtotal" t-options="{'widget': 'monetary', 'display_currency': object.currency_id}"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    <t t-if="object.rfq_gclid or object.rfq_utm_source or object.rfq_landing_page">
+                        <h3>Attribution</h3>
+                        <p>
+                            <t t-if="object.rfq_gclid">gclid: <t t-out="object.rfq_gclid"/><br/></t>
+                            <t t-if="object.rfq_utm_source">utm_source: <t t-out="object.rfq_utm_source"/><br/></t>
+                            <t t-if="object.rfq_utm_medium">utm_medium: <t t-out="object.rfq_utm_medium"/><br/></t>
+                            <t t-if="object.rfq_utm_campaign">utm_campaign: <t t-out="object.rfq_utm_campaign"/><br/></t>
+                            <t t-if="object.rfq_landing_page">landing: <t t-out="object.rfq_landing_page"/></t>
+                        </p>
+                    </t>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>
