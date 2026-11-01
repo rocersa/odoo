@@ -1,0 +1,4 @@
+/* Quote request modal: keep the form compact on small screens. */
+#rocersa_quote_modal .modal-body {
+    max-height: none;
+}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_website_quote" model="ir.ui.view">
+        <field name="name">sale.order.form.website.quote</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='order_details']" position="inside">
+                <field name="is_rfq_from_website"/>
+                <field name="rfq_company" invisible="not rfq_company"/>
+                <field name="rfq_gclid" invisible="not rfq_gclid"/>
+                <field name="rfq_utm_source" invisible="not rfq_utm_source"/>
+                <field name="rfq_utm_medium" invisible="not rfq_utm_medium"/>
+                <field name="rfq_utm_campaign" invisible="not rfq_utm_campaign"/>
+                <field name="rfq_landing_page" invisible="not rfq_landing_page"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Quote Request" name="rfq_message"
+                      invisible="not is_rfq_from_website">
+                    <field name="rfq_message" readonly="1"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_rfq_from_website" model="ir.actions.act_window">
+        <field name="name">Requested Quotation</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,kanban,activity</field>
+        <field name="domain">[('is_rfq_from_website', '=', True)]</field>
+    </record>
+
+    <menuitem id="menu_orders_rfq_from_website"
+              name="Requested Quotation"
+              action="action_rfq_from_website"
+              parent="website_sale.menu_orders"
+              sequence="1"/>
+</odoo>
