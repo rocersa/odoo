@@ -2,13 +2,14 @@
 <odoo>
     <!--
         One page per copy. The PNG is already in the paper's orientation
-        (72 mm across the roll, 70 mm along the feed), so the page holds it at
-        true size with no margins and no header.
+        (72 mm across the roll, the along-strip length is the feed), so the
+        page holds it at true size with no margins and no header.
 
-        The styles neutralise the report layout's container padding: the page
-        is the label, not a document on a page.
+        page_h comes from the report model: 70 for the standard label, 100 for
+        the wide one. The block is half a millimetre under the page so it
+        cannot round onto a blank second page.
     -->
-    <template id="report_label">
+    <template id="label_pages">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-set="n" t-value="(copies or {}).get(o.id, 1) or 1"/>
@@ -21,20 +22,26 @@
                             html, body, main, #wrapwrap { margin: 0 !important; padding: 0 !important; max-width: none !important; }
                             body.container, body.o_body_pdf { margin: 0 !important; padding: 0 !important; max-width: none !important; }
                             .article { margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; }
-                            /* Keep the block half a millimetre under the page: an
-                               exact-height block rounds one device pixel over in
-                               wkhtmltopdf and spills a blank second page. */
-                            .corten-label-page { width: 71.5mm; height: 69.5mm; padding: 0; overflow: hidden; }
-                            .corten-label-page img { width: 71.5mm; height: 69.5mm; display: block; }
+                            .corten-label-page { width: 71.5mm; padding: 0; overflow: hidden; }
+                            .corten-label-page img { width: 71.5mm; height: 100%; display: block; }
                         </style>
-                        <div class="corten-label-page">
-                            <img t-if="cell.corten_label_png"
-                                 t-att-src="image_data_uri(cell.corten_label_png)"
+                        <div class="corten-label-page"
+                             t-attf-style="height:{{ page_h - 0.5 }}mm;">
+                            <img t-if="labels.get(cell.id)"
+                                 t-att-src="image_data_uri(labels[cell.id])"
                                  alt="Magnet label"/>
                         </div>
                     </div>
                 </t>
             </t>
         </t>
+    </template>
+
+    <template id="report_label">
+        <t t-call="corten_label_magnet.label_pages"/>
+    </template>
+
+    <template id="report_label_100">
+        <t t-call="corten_label_magnet.label_pages"/>
     </template>
 </odoo>

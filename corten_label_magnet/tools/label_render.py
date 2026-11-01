@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "static" / "src" / "fonts"
 
-LABEL_W_MM = 70.0        # reading orientation
+LABEL_W_MM = 70.0        # default along-strip length (reading orientation)
 LABEL_H_MM = 72.0
 MARGIN_MM = 3.0
 MARGIN_MM_RIGHT = 3.0
@@ -161,7 +161,9 @@ def _wrap_two(draw, name, face, cap_mm, max_w, dpi):
     return [name], [single]
 
 
-def barcode_fits(data: str, width_mm: float = LABEL_W_MM - MARGIN_MM - MARGIN_MM_RIGHT) -> bool:
+def barcode_fits(data: str, width_mm: float | None = None) -> bool:
+    if width_mm is None:
+        width_mm = LABEL_W_MM - MARGIN_MM - MARGIN_MM_RIGHT
     """False when the payload would need a module narrower than a reliable scan."""
     modules = len(encode_code128b(data))
     usable_mm = width_mm - 2 * QUIET_ZONE_MM
@@ -189,8 +191,8 @@ def derive_location(code: str):
     return "", parts[0] if parts else code
 
 
-def draw_label(kind, code, dpi, *, name=None, detail=None):
-    W, H = px(LABEL_W_MM, dpi), px(LABEL_H_MM, dpi)
+def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM):
+    W, H = px(length_mm, dpi), px(LABEL_H_MM, dpi)
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
     m = px(MARGIN_MM, dpi)
@@ -228,10 +230,10 @@ def draw_label(kind, code, dpi, *, name=None, detail=None):
             _tracked(d, m, px(32.4, dpi), detail, fdet, 0.08, dpi)
 
     if code:
-        if barcode_fits(code):
+        if barcode_fits(code, length_mm - MARGIN_MM - MARGIN_MM_RIGHT):
             by = H - px(MARGIN_MM, dpi) - px(HUMAN_H_MM, dpi) - px(BARCODE_H_MM, dpi)
             _barcode(d, code, MARGIN_MM, by * 25.4 / dpi,
-                     LABEL_W_MM - MARGIN_MM - MARGIN_MM_RIGHT, BARCODE_H_MM, dpi)
+                     length_mm - MARGIN_MM - MARGIN_MM_RIGHT, BARCODE_H_MM, dpi)
         human_cap = 2.4
         if kind != "location" and detail:
             human_cap = _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
@@ -243,9 +245,10 @@ def draw_label(kind, code, dpi, *, name=None, detail=None):
     return img
 
 
-def render_png(kind, code, *, name=None, detail=None, dpi=600) -> bytes:
+def render_png(kind, code, *, name=None, detail=None, dpi=600,
+               length_mm=LABEL_W_MM) -> bytes:
     """Return the rotated, print-oriented PNG bytes for one label."""
-    img = draw_label(kind, code, dpi, name=name, detail=detail)
+    img = draw_label(kind, code, dpi, name=name, detail=detail, length_mm=length_mm)
     rotated = img.rotate(-90, expand=True)
     buf = io.BytesIO()
     rotated.save(buf, format="PNG", dpi=(dpi, dpi))

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        One action, two entry points: bound to storage locations (Inventory ->
-        Locations -> Print), and selected as the "Magnet label" format in the
-        product Print Labels wizard. Product actions deliberately have no
-        binding: the wizard is the product entry point.
+        Two actions, one per label length. Bound to storage locations so
+        Inventory -> Locations -> Print offers both; the product Print Labels
+        wizard picks between them by format.
     -->
     <record id="action_corten_label_location" model="ir.actions.report">
         <field name="name">Magnet Label (72 x 70 mm)</field>
@@ -16,5 +15,17 @@
         <field name="binding_model_id" ref="stock.model_stock_location"/>
         <field name="binding_type">report</field>
         <field name="print_report_name">'Magnet Label'</field>
+    </record>
+
+    <record id="action_corten_label_location_100" model="ir.actions.report">
+        <field name="name">Magnet Label 100 mm (72 x 100 mm)</field>
+        <field name="model">stock.location</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">corten_label_magnet.report_label_100</field>
+        <field name="report_file">corten_label_magnet.report_label_100</field>
+        <field name="paperformat_id" ref="paperformat_corten_label_100"/>
+        <field name="binding_model_id" ref="stock.model_stock_location"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Magnet Label 100 mm'</field>
     </record>
 </odoo>
