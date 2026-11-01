@@ -234,14 +234,19 @@ def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM)
             by = H - px(MARGIN_MM, dpi) - px(HUMAN_H_MM, dpi) - px(BARCODE_H_MM, dpi)
             _barcode(d, code, MARGIN_MM, by * 25.4 / dpi,
                      length_mm - MARGIN_MM - MARGIN_MM_RIGHT, BARCODE_H_MM, dpi)
+        # Under the barcode the code stays a secondary read: cap it so it
+        # clears the bottom margin on the wide label, and anchor its ink to
+        # the margin rather than a fixed offset.
         human_cap = 2.4
         if kind != "location" and detail:
-            human_cap = _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
-                                       0.11, content_w, dpi)
+            human_cap = min(3.0, _cap_for_chars(d, CODE_REF_CHARS,
+                                                "IBMPlexMono-600.ttf", 0.11,
+                                                content_w, dpi))
         human = _fit(d, code, "IBMPlexMono-600.ttf", human_cap, content_w, dpi)
         hw = _tracked_width(d, code, human, 0.11, dpi)
-        _tracked(d, (W - hw) / 2, H - px(MARGIN_MM, dpi) - px(3.4, dpi),
-                 code, human, 0.11, dpi)
+        bbox = d.textbbox((0, 0), code, font=human)
+        bottom = H - px(MARGIN_MM, dpi) - px(0.3, dpi)
+        _tracked(d, (W - hw) / 2, bottom - bbox[3], code, human, 0.11, dpi)
     return img
 
 
