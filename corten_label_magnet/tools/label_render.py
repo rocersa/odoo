@@ -21,13 +21,15 @@ FONT_DIR = Path(__file__).resolve().parent.parent / "static" / "src" / "fonts"
 
 LABEL_W_MM = 70.0        # reading orientation
 LABEL_H_MM = 72.0
-MARGIN_MM = 4.0
-MARGIN_MM_RIGHT = 4.0
+MARGIN_MM = 3.0
+MARGIN_MM_RIGHT = 3.0
 BARCODE_H_MM = 12.0
 HUMAN_H_MM = 4.4
 HEADER_Y_MM = 4.5
 QUIET_ZONE_MM = 1.6
 MAX_MODULE_MM = 0.36
+# Longest default_code in company-18 stock (2026-10-29): CorCnrJoiIntRol100-90-300
+CODE_REF_CHARS = 25
 MIN_MODULE_MM = 0.19      # ~1.5 dots at 203 dpi: below this a scan is unreliable
 
 INK = (0, 0, 0)
@@ -105,6 +107,19 @@ def _tracked(draw, x, y, text, font, tracking_mm, dpi):
 def _tracked_width(draw, text, font, tracking_mm, dpi):
     tr = tracking_mm * _mm(dpi)
     return sum(draw.textlength(c, font=font) for c in text) + max(0, len(text) - 1) * tr
+
+
+def _cap_for_chars(draw, count, face, tracking_mm, max_w, dpi):
+    """Cap height at which `count` monospace characters fill max_w exactly."""
+    lo, hi = 1.0, 6.0
+    while hi - lo > 0.01:
+        mid = (lo + hi) / 2
+        f = _font(face, mid, dpi)
+        if _tracked_width(draw, "M" * count, f, tracking_mm, dpi) <= max_w:
+            lo = mid
+        else:
+            hi = mid
+    return lo
 
 
 def _fit(draw, text, face, cap_mm, max_w, dpi):
@@ -204,7 +219,12 @@ def draw_label(kind, code, dpi, *, name=None, detail=None):
         for i, (line, f) in enumerate(zip(lines, fonts)):
             d.text((m, px(13.2 + i * 7.4, dpi)), line, font=f, fill=INK)
         if detail:
-            fdet = _fit(d, detail, "IBMPlexMono-600.ttf", 2.2, content_w, dpi)
+            # One size for every product code: the longest code in stock fills
+            # the label width, so shorter codes are as large as they can be
+            # without a per-label size change.
+            code_cap = _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
+                                      0.11, content_w, dpi)
+            fdet = _fit(d, detail, "IBMPlexMono-600.ttf", code_cap, content_w, dpi)
             _tracked(d, m, px(32.4, dpi), detail, fdet, 0.08, dpi)
 
     if code:
@@ -212,7 +232,11 @@ def draw_label(kind, code, dpi, *, name=None, detail=None):
             by = H - px(MARGIN_MM, dpi) - px(HUMAN_H_MM, dpi) - px(BARCODE_H_MM, dpi)
             _barcode(d, code, MARGIN_MM, by * 25.4 / dpi,
                      LABEL_W_MM - MARGIN_MM - MARGIN_MM_RIGHT, BARCODE_H_MM, dpi)
-        human = _fit(d, code, "IBMPlexMono-600.ttf", 2.4, content_w, dpi)
+        human_cap = 2.4
+        if kind != "location" and detail:
+            human_cap = _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
+                                       0.11, content_w, dpi)
+        human = _fit(d, code, "IBMPlexMono-600.ttf", human_cap, content_w, dpi)
         hw = _tracked_width(d, code, human, 0.11, dpi)
         _tracked(d, (W - hw) / 2, H - px(MARGIN_MM, dpi) - px(3.4, dpi),
                  code, human, 0.11, dpi)
