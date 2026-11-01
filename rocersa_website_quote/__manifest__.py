@@ -2,7 +2,7 @@
 {
     "name": "Website Quote Request",
     "summary": "Replace checkout with a quote request (cart -> RFQ) per website",
-    "version": "20.0.1.0.1",
+    "version": "20.0.1.0.2",
     "category": "Website",
     "author": "Rocersa",
     "license": "AGPL-3",

@@ -76,9 +76,8 @@ class WebsiteQuote(http.Controller):
         except Exception:  # noqa: BLE001 - a mail failure must not fail the RFQ
             _logger.exception("Customer quote-request email failed for %s", order.name)
         try:
-            company_email = (
-                order.website_id.company_id.email or order.company_id.email
-            )
+            company = order.website_id.company_id or order.company_id
+            company_email = company.partner_id.email or company.email
             staff = request.env.ref(
                 "rocersa_website_quote.mail_template_quote_staff",
                 raise_if_not_found=False,

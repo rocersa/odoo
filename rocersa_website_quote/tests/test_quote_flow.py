@@ -79,7 +79,7 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
         self.assertEqual(self.cart.partner_id, self.env.user.partner_id)
 
     def test_guest_quote_emails_customer_and_company(self):
-        self.website.company_id.sudo().write({"email": "company@example.com"})
+        self.website.company_id.partner_id.sudo().write({"email": "company@example.com"})
         self._submit()
         mails = self.env["mail.mail"].sudo().search([
             ("model", "=", "sale.order"),
