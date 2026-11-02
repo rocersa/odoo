@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import _, fields, models
+from odoo.exceptions import UserError
 
 MAGNET_70 = "corten_magnet"
 MAGNET_100 = "corten_magnet_100"
@@ -20,7 +21,24 @@ class ProductLabelLayout(models.TransientModel):
     )
 
     def _prepare_report_data(self):
-        xml_id, data = super()._prepare_report_data()
-        if self.print_format in MAGNET_REPORTS:
-            xml_id = MAGNET_REPORTS[self.print_format]
-        return xml_id, data
+        if self.print_format not in MAGNET_REPORTS:
+            return super()._prepare_report_data()
+        self.ensure_one()
+        if self.custom_quantity <= 0:
+            raise UserError(_("You need to set a positive quantity."))
+
+        # Odoo 20 builds a generic ``labels`` list for its own label templates.
+        # The magnet report renders its PNGs in Python, so it keeps the v19
+        # ``quantity_by_product`` contract instead.
+        requests = self._get_label_requests()
+        quantities = {}
+        active_model = "product.product"
+        for request in requests:
+            product = request["product"]
+            active_model = product._name
+            quantities[product.id] = quantities.get(product.id, 0) + request["copies"]
+
+        return MAGNET_REPORTS[self.print_format], {
+            "active_model": active_model,
+            "quantity_by_product": quantities,
+        }

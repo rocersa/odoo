@@ -47,13 +47,13 @@ class TestLabelRender(TransactionCase):
 
     def test_wizard_offers_both_lengths(self):
         field = self.env["product.label.layout"]._fields["print_format"]
-        self.assertIn("corten_magnet", field.selection)
-        self.assertIn("corten_magnet_100", field.selection)
+        self.assertIn("corten_magnet", dict(field.selection))
+        self.assertIn("corten_magnet_100", dict(field.selection))
 
         product = self.env["product.product"].create({
             "name": "Flamed Corten Edging 1000",
             "default_code": "CT-EDG-1000",
-            "type": "product",
+            "type": "consu",
         })
         for fmt, xml_id in (
             ("corten_magnet", "corten_label_magnet.action_corten_label_location"),
@@ -72,7 +72,7 @@ class TestLabelRender(TransactionCase):
         product = self.env["product.product"].create({
             "name": "Flamed Corten Edging 1000",
             "default_code": "CT-EDG-1000",
-            "type": "product",
+            "type": "consu",
         })
         for model, page_h in (
             ("report.corten_label_magnet.report_label", 70),
@@ -87,6 +87,26 @@ class TestLabelRender(TransactionCase):
             self.assertEqual(values["page_h"], page_h)
             self.assertEqual(
                 base64.b64decode(values["labels"][product.id])[:4], b"\x89PNG")
+
+    def test_report_html_embeds_png(self):
+        location = self.env["stock.location"].search([], limit=1)
+        report = self.env.ref("corten_label_magnet.action_corten_label_location")
+        html, _kind = report._render_qweb_html(report, location.ids)
+        self.assertIn(b"data:image/png;base64", html)
+
+        product = self.env["product.product"].create({
+            "name": "Flamed Corten Edging 1000",
+            "default_code": "CT-EDG-1000",
+            "type": "consu",
+        })
+        wizard = self.env["product.label.layout"].create({
+            "print_format": "corten_magnet",
+            "custom_quantity": 2,
+            "product_ids": [(6, 0, product.ids)],
+        })
+        action = wizard.process()
+        html, _kind = report._render_qweb_html(report, None, data=action["data"])
+        self.assertEqual(html.count(b"data:image/png;base64"), 2)
 
     def test_location_reports_are_bound(self):
         actions = self.env["ir.actions.report"].search([
