@@ -36,20 +36,22 @@ from unittest.mock import MagicMock, patch
 
 from odoo.exceptions import UserError
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 from odoo.tools import mute_logger
 
-from ..controllers import rate_limiting, utils
+from ..controllers import mcp as mcp_controller, rate_limiting, utils
 from .test_helpers import create_test_user, users_groups_field
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMcpWriteTools(common.HttpCase):
+class TestMcpWriteTools(McpHttpCase):
     """Native MCP write tools + method calls + audit/rate-limit."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
+        mcp_controller._audit_write_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
 
@@ -112,16 +114,16 @@ class TestMcpWriteTools(common.HttpCase):
         )
 
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
-        params.set_param("mcp_server.enable_logging", "True")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enable_logging", "True")
+        utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # Fixture helpers
     # ------------------------------------------------------------------
     def _mint_key(self, user, name):
         """Mint an ``rpc``-scope API key for ``user``."""
-        return self.env(user=user)["res.users.apikeys"]._generate(
+        return self.env(user=user)["res.users.apikeys"].sudo()._generate(
             "rpc", name, datetime.now() + timedelta(days=30)
         )
 
@@ -148,7 +150,7 @@ class TestMcpWriteTools(common.HttpCase):
         """Toggle ``allow_method_calls`` on res.partner and refresh caches."""
         self.partner_model.allow_method_calls = enabled
         self.env.flush_all()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # RPC helpers
@@ -316,7 +318,7 @@ class TestMcpWriteTools(common.HttpCase):
         reuses ``max_limit`` and trips regardless of whether the ids exist.
         """
         self._set_method_calls(True)
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.max_limit", "5")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.max_limit", "5")
 
         result = self._call_tool(
             "call_model_method",
@@ -611,7 +613,7 @@ class TestMcpWriteTools(common.HttpCase):
             allow_unlink=True,
             allow_method_calls=True,
         )
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         denied = self._call_tool(
             "call_model_method",
             {
@@ -635,7 +637,7 @@ class TestMcpWriteTools(common.HttpCase):
             allow_unlink=True,
             allow_method_calls=True,
         )
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         allowed = self._call_tool(
             "call_model_method",
             {
@@ -781,9 +783,10 @@ class TestMcpWriteTools(common.HttpCase):
     def test_rate_limit_primitives_trip_at_threshold(self):
         """record_api_request + check_rate_limit deny once the limit is reached."""
         rate_limiting._api_limiter.clear()
+        mcp_controller._audit_write_limiter.clear()
         uid = self.mcp_user.id
         dbname = self.env.cr.dbname
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.request_limit", "11"
         )
 
@@ -830,7 +833,7 @@ class TestMcpWriteTools(common.HttpCase):
         # res.country has no mail.thread; enable it for write so the per-op gate
         # passes and we reach the missing-chatter guard.
         self._enable_model("base.model_res_country", allow_read=True, allow_write=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         result = self._call_tool(
             "post_message",
             {"model": "res.country", "record_id": 1, "body": "nope"},

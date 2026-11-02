@@ -43,5 +43,8 @@ class ResUsersApikeys(models.Model):
     _inherit = "res.users.apikeys"
 
     def _generate(self, scope, name, expiration_date):
-        scope = scope or self.env.context.get("mcp_api_key_scope")
+        # Odoo 20 matches API-key scope exactly (no ``scope IS NULL OR``), so a
+        # NULL/global key would authenticate nowhere. Store the legacy "global"
+        # scope as ``rpc`` instead.
+        scope = self.env.context.get("mcp_api_key_scope") or scope or "rpc"
         return super()._generate(scope, name, expiration_date)

@@ -89,7 +89,7 @@ class MCPLog(models.Model):
         if (
             self.env["ir.config_parameter"]
             .sudo()  # sudo: read a global config flag, not user-scoped data.
-            .get_param("mcp_server.enable_logging", "True")
+            .get_str("mcp_server.enable_logging", "True")
             != "True"
         ):
             return self.env["mcp.log"]
@@ -128,6 +128,15 @@ class MCPLog(models.Model):
             "session_id": kwargs.get("session_id"),
             "user_agent": kwargs.get("user_agent"),
         }
+
+        # A request IP is a string (max 45 for IPv6). Tests and mocked requests
+        # can hand over a non-string object; never let that overflow the column
+        # and drop the audit row.
+        ip_address = log_data.get("ip_address")
+        if not isinstance(ip_address, str):
+            log_data["ip_address"] = None
+        else:
+            log_data["ip_address"] = ip_address[:45] or None
 
         # Truncate large data fields to prevent database issues
         max_text_length = 10000
@@ -311,7 +320,7 @@ class MCPLog(models.Model):
             days = int(
                 self.env["ir.config_parameter"]
                 .sudo()  # sudo: read a global config value, not user-scoped data.
-                .get_param("mcp_server.log_retention_days", "30")
+                .get_str("mcp_server.log_retention_days", "30")
             )
 
         if days <= 0:

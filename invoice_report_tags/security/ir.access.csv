@@ -1,0 +1,4 @@
+id,name,model_id,group_id/id,operation,domain
+access_rocersa_invoice_report_readonly,rocersa.invoice.report readonly,rocersa.invoice.report,account.group_account_readonly,r,
+access_rocersa_invoice_report_billing,rocersa.invoice.report billing,rocersa.invoice.report,account.group_account_invoice,r,
+access_rocersa_invoice_report_manager,rocersa.invoice.report manager,rocersa.invoice.report,account.group_account_manager,r,

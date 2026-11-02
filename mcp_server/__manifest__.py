@@ -1,6 +1,6 @@
 {
     "name": "MCP Server",
-    "version": "19.0.2.2.0",
+    "version": "20.0.1.0.1",
     "summary": "Connect AI assistants to your Odoo instance via Model Context Protocol",
     "description": """
 MCP Server for Odoo
@@ -49,7 +49,7 @@ the module's legacy XML-RPC endpoints remain available for programmatic/RPC acce
     "depends": ["base", "base_setup", "mail", "rpc", "web"],
     "data": [
         "security/security.xml",
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "wizard/mcp_model_selection_wizard_views.xml",
         "wizard/oauth_bulk_confirm_wizard_views.xml",
         "views/mcp_enabled_models_views.xml",

@@ -1,7 +1,7 @@
 {
     "name": "Pricelist Area Filter",
     "summary": "Filter pricelist rules by variant area (Long Edge × Short Edge).",
-    "version": "19.0.2.0.0",
+    "version": "20.0.1.0.0",
     "category": "Sales/Sales",
     "author": "Rocersa",
     "license": "AGPL-3",

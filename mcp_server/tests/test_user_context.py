@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
 from ..controllers import rate_limiting, utils
 from .test_helpers import create_test_user
@@ -31,12 +32,12 @@ PREFERRED_PROTOCOL_VERSION = "2025-11-25"
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestUserContext(common.HttpCase):
+class TestUserContext(McpHttpCase):
     """User context (instructions + get_current_context) on ``/mcp``."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Reset the shared in-memory rate-limit cache for test independence.
         rate_limiting._api_limiter.clear()
 
@@ -53,15 +54,15 @@ class TestUserContext(common.HttpCase):
         self.api_key = self._mint_key(self.mcp_user, "Context Key")
 
         # Enable MCP globally and drop any stale cached toggle value.
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
-        utils.clear_mcp_caches()
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
+        utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
     def _mint_key(self, user, name):
         """Mint an ``rpc``-scope API key for ``user``."""
-        return self.env(user=user)["res.users.apikeys"]._generate(
+        return self.env(user=user)["res.users.apikeys"].sudo()._generate(
             "rpc", name, datetime.now() + timedelta(days=30)
         )
 
@@ -196,7 +197,7 @@ class TestUserContext(common.HttpCase):
         """get_current_context returns context even with no mcp.enabled.model rows."""
         # Global MCP switch stays ON (set in setUp); clear every enabled-model row.
         self.env["mcp.enabled.model"].sudo().search([]).unlink()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         text = self._context_text()
         self.assertIn(self.mcp_user.display_name, text)

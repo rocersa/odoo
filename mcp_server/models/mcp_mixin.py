@@ -21,7 +21,7 @@ import base64
 
 from odoo import _, api, models
 from odoo.exceptions import AccessError, MissingError, UserError
-from odoo.tools import ormcache
+from odoo.api import ormcache
 from odoo.tools.mimetypes import guess_mimetype
 
 from ..controllers import utils
@@ -265,6 +265,10 @@ class McpMixin(models.AbstractModel):
 
         # Runs as the calling user -> ORM enforces read ACLs / record rules.
         value = record.read([ref.field])[0].get(ref.field)
+        # Odoo 20 returns ``{'content': <base64>, 'size': <n>}`` for binary
+        # fields; Odoo 19 returned the base64 string directly.
+        if isinstance(value, dict):
+            value = value.get("content")
         if not value:
             raise MissingError(
                 _(
@@ -275,7 +279,9 @@ class McpMixin(models.AbstractModel):
                 )
             )
 
-        raw = base64.b64decode(value)
+        # Odoo 19 ``read()`` returned a base64 string; Odoo 20 returns bytes for
+        # binary fields. Normalise both to raw bytes before building the entry.
+        raw = value if isinstance(value, (bytes, bytearray)) else base64.b64decode(value)
         mimetype = self._record_field_mimetype(ref.model, ref.record_id, ref.field, raw)
         return self._build_content_entry(uri, mimetype, raw)
 

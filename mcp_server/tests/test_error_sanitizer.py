@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 from odoo.tools import mute_logger
 
 from ..controllers import error_sanitizer, rate_limiting, utils
@@ -95,12 +96,12 @@ class TestErrorSanitizerUnit(common.TransactionCase):
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestErrorSanitizerEndpoint(common.HttpCase):
+class TestErrorSanitizerEndpoint(McpHttpCase):
     """A non-safe tool error surfaces as the generic message over ``/mcp``."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
@@ -110,12 +111,12 @@ class TestErrorSanitizerEndpoint(common.HttpCase):
             f"mcp_sanitize_user_{unique_id}",
             email=f"mcp_sanitize_{unique_id}@example.com",
         )
-        self.api_key = self.env(user=self.mcp_user)["res.users.apikeys"]._generate(
+        self.api_key = self.env(user=self.mcp_user)["res.users.apikeys"].sudo()._generate(
             "rpc", "Sanitizer Key", datetime.now() + timedelta(days=30)
         )
 
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
-        utils.clear_mcp_caches()
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
+        utils.clear_mcp_caches(self.env)
 
     def _post_rpc(self, body):
         headers = {

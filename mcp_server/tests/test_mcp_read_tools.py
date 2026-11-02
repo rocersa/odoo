@@ -27,8 +27,9 @@ from unittest.mock import patch
 
 from odoo.exceptions import AccessError, MissingError
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
-from ..controllers import rate_limiting, utils
+from ..controllers import mcp as mcp_controller, rate_limiting, utils
 from ..models.mcp_tools_read import DEFAULT_LIMIT, MAX_LIMIT
 from ..tools.smart_fields import DEFAULT_MAX_SMART_FIELDS
 from .test_helpers import create_test_user, users_groups_field
@@ -51,14 +52,15 @@ READ_TOOL_NAMES = {
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMcpReadTools(common.HttpCase):
+class TestMcpReadTools(McpHttpCase):
     """Native MCP read tools + resources on ``/mcp``."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Reset the shared in-memory rate-limit cache for test independence.
         rate_limiting._api_limiter.clear()
+        mcp_controller._audit_write_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
 
@@ -122,18 +124,18 @@ class TestMcpReadTools(common.HttpCase):
         )
 
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enabled", "True")
         # Logging on so the resources/read audit-row test can assert the
         # persisted mcp.log entry.
-        params.set_param("mcp_server.enable_logging", "True")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.enable_logging", "True")
+        utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # Fixture helpers
     # ------------------------------------------------------------------
     def _mint_key(self, user, name):
         """Mint an ``rpc``-scope API key for ``user``."""
-        return self.env(user=user)["res.users.apikeys"]._generate(
+        return self.env(user=user)["res.users.apikeys"].sudo()._generate(
             "rpc", name, datetime.now() + timedelta(days=30)
         )
 
@@ -273,9 +275,9 @@ class TestMcpReadTools(common.HttpCase):
         inside the rolled-back test transaction, so no teardown restore is needed.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.default_limit", "3")
-        params.set_param("mcp_server.max_smart_fields", "5")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.default_limit", "3")
+        params.set_str("mcp_server.max_smart_fields", "5")
+        utils.clear_mcp_caches(self.env)
 
         # Ensure there are more partners than the lowered default page size.
         self.env["res.partner"].create(
@@ -305,8 +307,8 @@ class TestMcpReadTools(common.HttpCase):
         must clamp back to the module defaults instead.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.default_limit", "0")
-        params.set_param("mcp_server.max_limit", "0")
+        params.set_str("mcp_server.default_limit", "0")
+        params.set_str("mcp_server.max_limit", "0")
         mixin = self.env["mcp.mixin"]
 
         # An explicit (even huge) limit is capped to MAX_LIMIT, never left at 0.
@@ -327,8 +329,8 @@ class TestMcpReadTools(common.HttpCase):
         source, so the promise cannot drift from the behaviour.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.default_limit", "500")
-        params.set_param("mcp_server.max_limit", "100")
+        params.set_str("mcp_server.default_limit", "500")
+        params.set_str("mcp_server.max_limit", "100")
         mixin = self.env["mcp.mixin"]
 
         # No / zero / negative limit uses the default, clamped down to the max.
@@ -363,6 +365,9 @@ class TestMcpReadTools(common.HttpCase):
         partner = self.env["res.partner"].create(
             {"name": "Long Comment", "comment": long_text}
         )
+        # ``comment`` is HTML; Odoo 20 wraps it in <p>...</p>. Page against the
+        # value as stored, not the plain text passed in.
+        stored = partner.read(["comment"])[0]["comment"]
 
         first = self._call_tool(
             "read_field",
@@ -373,14 +378,14 @@ class TestMcpReadTools(common.HttpCase):
                 "length": 2000,
             },
         )
-        self.assertNotIn("isError", first, msg=first)
+        self.assertFalse(first.get("isError"), msg=first)
         structured = first["structuredContent"]
-        self.assertEqual(structured["total"], 5000)
+        self.assertEqual(structured["total"], len(stored))
         self.assertEqual(structured["offset"], 0)
         self.assertEqual(structured["returned"], 2000)
         self.assertTrue(structured["has_more"])
-        self.assertEqual(structured["value"], long_text[:2000])
-        self.assertIn(long_text[:2000], first["content"][0]["text"])
+        self.assertEqual(structured["value"], stored[:2000])
+        self.assertIn(stored[:2000], first["content"][0]["text"])
 
         second = self._call_tool(
             "read_field",
@@ -393,9 +398,9 @@ class TestMcpReadTools(common.HttpCase):
             },
         )
         structured = second["structuredContent"]
-        self.assertEqual(structured["returned"], 3000)
+        self.assertEqual(structured["returned"], len(stored) - 2000)
         self.assertFalse(structured["has_more"])
-        self.assertEqual(structured["value"], long_text[2000:])
+        self.assertEqual(structured["value"], stored[2000:])
 
     def test_read_field_rejects_non_text_field(self):
         """read_field refuses non char/text/html fields with a clean error."""
@@ -483,7 +488,7 @@ class TestMcpReadTools(common.HttpCase):
     def test_get_record_large_x2many_collapses_to_count_and_hint(self):
         """An x2many collection above the cap collapses to a count + search hint."""
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.max_related_items", "2")
+        params.set_str("mcp_server.max_related_items", "2")
         parent = self.env["res.partner"].create({"name": "Collapse Parent"})
         self.env["res.partner"].create(
             [{"name": f"Child {i}", "parent_id": parent.id} for i in range(3)]
@@ -513,7 +518,7 @@ class TestMcpReadTools(common.HttpCase):
         # Expose the tag model so the collapse still offers a search hint
         # (the hint is suppressed only for non-enabled models).
         self._enable_model("base.model_res_partner_category", allow_read=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         tag = self.env["res.partner.category"].create({"name": "VIP"})
         partner = self.env["res.partner"].create(
             {"name": "Tagged Partner", "category_id": [(6, 0, tag.ids)]}
@@ -562,8 +567,8 @@ class TestMcpReadTools(common.HttpCase):
     def test_get_record_large_m2m_view_all_uses_id_list(self):
         """A collapsed many2many (no inverse field) hints with an id-in domain."""
         self._enable_model("base.model_res_partner_category", allow_read=True)
-        utils.clear_mcp_caches()
-        self.env["ir.config_parameter"].sudo().set_param(
+        utils.clear_mcp_caches(self.env)
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.max_related_items", "1"
         )
         tags = self.env["res.partner.category"].create([{"name": "M1"}, {"name": "M2"}])
@@ -584,8 +589,8 @@ class TestMcpReadTools(common.HttpCase):
     def test_get_record_x2many_hint_suppressed_when_relation_not_enabled(self):
         """A collapsed relation whose target isn't MCP-enabled says so, no hint."""
         self._disable_model("base.model_res_partner_category")
-        utils.clear_mcp_caches()
-        self.env["ir.config_parameter"].sudo().set_param(
+        utils.clear_mcp_caches(self.env)
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.max_related_items", "1"
         )
         tags = self.env["res.partner.category"].create([{"name": "N1"}, {"name": "N2"}])
@@ -613,7 +618,7 @@ class TestMcpReadTools(common.HttpCase):
         enabled" note instead of listing the names inline.
         """
         self._disable_model("base.model_res_partner_category")
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Default cap (3) applies -> a single tag is within the inline range, so
         # only the per-model gate (not the size check) can suppress the preview.
         tag = self.env["res.partner.category"].create({"name": "SecretTagLeak"})
@@ -870,7 +875,7 @@ class TestMcpReadTools(common.HttpCase):
         # Drop ir.attachment from the allow-list so only the res_model rule can
         # grant access; res.users stays disabled (from setUp).
         self._disable_model("base.model_ir_attachment")
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         attachment = (
             self.env["ir.attachment"]
@@ -895,7 +900,7 @@ class TestMcpReadTools(common.HttpCase):
 
         # Allowed once the attachment's parent model (res.users) is enabled.
         self._enable_model("base.model_res_users", allow_read=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         result = self._rpc_result("resources/read", {"uri": uri})
         entry = result["contents"][0]
         self.assertEqual(entry["uri"], uri)
@@ -1071,9 +1076,14 @@ class TestMcpReadTools(common.HttpCase):
         res.partner has both is_company True and False, so grouping on it yields
         at least two buckets; limit=1 forces truncation.
         """
+        # Odoo 20 computes is_company from VAT, so use a second Address Type
+        # value (invoice vs the default contact) to guarantee two buckets.
+        self.env["res.partner"].create(
+            {"name": "Aggregate Invoice", "type": "invoice"}
+        )
         result = self._call_tool(
             "aggregate_records",
-            {"model": "res.partner", "groupby": ["is_company"], "limit": 1},
+            {"model": "res.partner", "groupby": ["type"], "limit": 1},
         )
         self.assertFalse(result["isError"], msg=result)
         structured = result["structuredContent"]

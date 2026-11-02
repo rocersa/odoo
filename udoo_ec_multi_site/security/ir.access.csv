@@ -1,0 +1,3 @@
+id,name,model_id,group_id/id,operation,domain
+access_multi_website_product_report_salesman,multi.website.product.report,multi.website.product.report,website.group_website_designer,rud,
+access_multi_website_setter,multi.website.setter,multi.website.setter,website.group_website_designer,crud,

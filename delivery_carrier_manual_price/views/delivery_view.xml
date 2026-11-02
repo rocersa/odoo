@@ -15,14 +15,19 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="delivery.view_order_form_with_carrier" />
         <field name="arch" type="xml">
+            <!-- Odoo 20 adds a second "Shipping" button, so the old positional
+                 [2]/[3] targets are wrong, and `string` is forbidden as a
+                 selector (translated attribute). Both "Update shipping cost"
+                 buttons are the only action_open_delivery_wizard buttons with
+                 a context; target those. -->
             <xpath
-                expr="//button[@name='action_open_delivery_wizard'][2]"
+                expr="(//button[@name='action_open_delivery_wizard'][@context])[1]"
                 position="attributes"
             >
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath
-                expr="//button[@name='action_open_delivery_wizard'][3]"
+                expr="(//button[@name='action_open_delivery_wizard'][@context])[2]"
                 position="attributes"
             >
                 <attribute name="invisible">1</attribute>

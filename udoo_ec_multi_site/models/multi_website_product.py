@@ -2,6 +2,7 @@
 # Copyright 2024 Sveltware Solutions
 
 from odoo import fields, models, _
+from odoo.tools import SQL
 
 
 class MultiWebsiteProductReport(models.Model):
@@ -36,8 +37,8 @@ class MultiWebsiteProductReport(models.Model):
     )
 
     @property
-    def _table_query(self):
-        return """
+    def _table_sql(self):
+        query = SQL("""
         WITH onspec AS (
             SELECT 
                 website_id
@@ -72,7 +73,8 @@ class MultiWebsiteProductReport(models.Model):
         JOIN product_template tmpl
             ON tmpl.id = product_id
             AND tmpl.sale_ok
-        """
+        """)
+        return SQL("(%s)", query)
 
     def action_open_reference(self):
         self.ensure_one()

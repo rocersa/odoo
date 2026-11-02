@@ -17,11 +17,11 @@
     """,
     "author": "Harry",
     "category": "Productivity/Phone",
-    "version": "19.0.1.0.27",
+    "version": "20.0.1.0.0",
     "depends": ["voip", "crm"],
     "data": [
         "security/voip_caller_identity_security.xml",
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "views/caller_identity_views.xml",
         "views/res_users_views.xml",
         "views/res_config_settings_views.xml",

@@ -27,6 +27,7 @@ from psycopg2 import IntegrityError
 
 from odoo import fields
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 from odoo.tools import mute_logger
 
 from ..controllers import oauth_server, rate_limiting, utils
@@ -45,12 +46,12 @@ def _sha256_hex(value):
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestOAuth(common.HttpCase):
+class TestOAuth(McpHttpCase):
     """OAuth 2.1 auth-code + PKCE flow and security assertions."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Reset the shared in-memory limiters; they're module-level and survive
         # the per-test rollback, so stale registrations would otherwise leak and
         # trip the cap.
@@ -75,13 +76,13 @@ class TestOAuth(common.HttpCase):
 
         # Enable MCP globally and expose res.partner (read) for the tool call.
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enabled", "True")
         # OAuth is on by default; set it explicitly here so the suite is
         # independent of the global default, then clear the caches that gate the
         # endpoints.
-        params.set_param("mcp_server.enable_oauth", "True")
+        params.set_str("mcp_server.enable_oauth", "True")
         self._enable_model("base.model_res_partner", allow_read=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         # A registered public client shared by the flow tests.
         self.client_id = self._register_client()["client_id"]
@@ -1542,7 +1543,7 @@ class TestOAuth(common.HttpCase):
     def test_dcr_ip_rate_limit_returns_429(self):
         """Registration is capped per IP independently of the API request limit."""
         # Even with the general API limit disabled, the DCR cap still applies.
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.request_limit", "0"
         )
         oauth_server._dcr_limiter.clear()
@@ -1572,7 +1573,7 @@ class TestOAuth(common.HttpCase):
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestOAuthDisabled(common.HttpCase):
+class TestOAuthDisabled(McpHttpCase):
     """OAuth front door explicitly OFF: endpoints 404, tokens refused.
 
     ``mcp_server.enable_oauth`` can be turned off, so with MCP enabled but OAuth off
@@ -1583,7 +1584,7 @@ class TestOAuthDisabled(common.HttpCase):
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
         oauth_server._dcr_limiter.clear()
 
@@ -1599,18 +1600,18 @@ class TestOAuthDisabled(common.HttpCase):
         )
         # An rpc-scope API key: the always-available front door, unaffected by
         # the OAuth switch.
-        self.api_key = self.env(user=self.user)["res.users.apikeys"]._generate(
+        self.api_key = self.env(user=self.user)["res.users.apikeys"].sudo()._generate(
             "rpc", "OAuth-Off Key", fields.Datetime.now() + timedelta(days=30)
         )
         self.resource = self.base_url() + "/mcp"
         self.redirect_uri = "http://127.0.0.1:8765/callback"
 
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "True")
+        params.set_str("mcp_server.enabled", "True")
         # OAuth explicitly OFF -- the whole OAuth front door must be closed.
-        params.set_param("mcp_server.enable_oauth", "False")
+        params.set_str("mcp_server.enable_oauth", "False")
         self._enable_model("base.model_res_partner", allow_read=True)
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         # A resource-owner session so the auth='user' authorize route reaches its
         # handler (and hits the 404 guard) instead of redirecting to /web/login.
@@ -1645,7 +1646,7 @@ class TestOAuthDisabled(common.HttpCase):
         """OAuth is on by default: an unset enable_oauth parameter counts as on."""
         params = self.env["ir.config_parameter"].sudo()
         params.search([("key", "=", "mcp_server.enable_oauth")]).unlink()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         self.assertTrue(utils.is_oauth_enabled(self.env))
         resp = self.url_open(
             "/mcp/oauth/register",
@@ -1733,8 +1734,8 @@ class TestOAuthDisabled(common.HttpCase):
     def test_reenabling_oauth_restores_the_front_door(self):
         """Turning enable_oauth back on re-exposes registration (spot check)."""
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enable_oauth", "True")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.enable_oauth", "True")
+        utils.clear_mcp_caches(self.env)
 
         response = self.url_open(
             "/mcp/oauth/register",

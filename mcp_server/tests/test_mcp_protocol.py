@@ -8,10 +8,13 @@ global enable gate, and JSON-RPC error rendering. Mirrors the HttpCase +
 
 import json
 import time
+
+import requests
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 from odoo.tools import mute_logger
 
 from ..controllers import error_sanitizer, mcp, rate_limiting, utils
@@ -26,12 +29,12 @@ SERVER_NAME = "much-mcp-server"
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMcpProtocol(common.HttpCase):
+class TestMcpProtocol(McpHttpCase):
     """Native MCP protocol handshake + auth on ``/mcp``."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         # Reset the shared in-memory rate-limit caches for test independence
         # (both the per-user limiter and the per-IP bearer-failure audit throttle
         # are module-level globals that otherwise carry state across tests).
@@ -51,13 +54,13 @@ class TestMcpProtocol(common.HttpCase):
 
         # Mint an rpc-scope API key for the user.
         env_as_user = self.env(user=self.mcp_user)
-        self.api_key = env_as_user["res.users.apikeys"]._generate(
+        self.api_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "Test MCP Protocol Key", datetime.now() + timedelta(days=30)
         )
 
         # Enable MCP globally and drop any stale cached toggle value.
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
-        utils.clear_mcp_caches()
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
+        utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -202,10 +205,10 @@ class TestMcpProtocol(common.HttpCase):
     # ------------------------------------------------------------------
     def _set_allowed_origins(self, value):
         """Set the ``mcp_server.allowed_origins`` param and flush the caches."""
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.allowed_origins", value
         )
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
     def _ping_with_origin(self, origin):
         """POST an authenticated ping carrying an ``Origin`` header."""
@@ -361,7 +364,7 @@ class TestMcpProtocol(common.HttpCase):
             f"mcp_archived_user_{unique_id}",
             email=f"mcp_archived_{unique_id}@example.com",
         )
-        key = self.env(user=archived_user)["res.users.apikeys"]._generate(
+        key = self.env(user=archived_user)["res.users.apikeys"].sudo()._generate(
             "rpc", "Archived User Key", datetime.now() + timedelta(days=30)
         )
         # Deactivate the owner AFTER minting the key: an outstanding rpc key must
@@ -378,7 +381,7 @@ class TestMcpProtocol(common.HttpCase):
         """A key minted for a non-rpc scope is not accepted at /mcp (401)."""
         # Front door 1 accepts a credential scoped to 'mcp' or 'rpc'; a key
         # scoped to neither must not resolve a user (no OAuth fallback either).
-        key = self.env(user=self.mcp_user)["res.users.apikeys"]._generate(
+        key = self.env(user=self.mcp_user)["res.users.apikeys"].sudo()._generate(
             "mcp_not_rpc", "Non-RPC Scope Key", datetime.now() + timedelta(days=30)
         )
         response = self._post_rpc(
@@ -424,7 +427,7 @@ class TestMcpProtocol(common.HttpCase):
         # Disable the per-user request limiter so every call reaches tool
         # dispatch (its 429 would otherwise pre-empt the audit path we exercise);
         # the audit throttle is the failure mode under test.
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "mcp_server.enable_rate_limiting", "False"
         )
         mcp._audit_write_limiter.clear()
@@ -584,8 +587,8 @@ class TestMcpProtocol(common.HttpCase):
         this mirrors the rate-limit path, which also uses -32000.
         """
         params = self.env["ir.config_parameter"].sudo()
-        params.set_param("mcp_server.enabled", "False")
-        utils.clear_mcp_caches()
+        params.set_str("mcp_server.enabled", "False")
+        utils.clear_mcp_caches(self.env)
         try:
             response = self._post_rpc(
                 {"jsonrpc": "2.0", "id": 11, "method": "initialize", "params": {}}
@@ -595,8 +598,8 @@ class TestMcpProtocol(common.HttpCase):
             self.assertEqual(error["code"], -32000)
             self.assertIn("disabled globally", error["message"])
         finally:
-            params.set_param("mcp_server.enabled", "True")
-            utils.clear_mcp_caches()
+            params.set_str("mcp_server.enabled", "True")
+            utils.clear_mcp_caches(self.env)
 
     # ------------------------------------------------------------------
     # Transport hardening (dispatcher)
@@ -637,10 +640,18 @@ class TestMcpProtocol(common.HttpCase):
         self.assertIsNone(payload["id"])
 
     @mute_logger("odoo.http", "werkzeug")
-    def test_oversized_body_is_refused_with_413(self):
-        """A body over the per-route cap is refused before it is parsed (413)."""
+    def test_oversized_body_is_refused(self):
+        """A body over the per-route cap is refused before it is parsed.
+
+        With a body this size the server can reject on Content-Length and close
+        the socket while the client is still writing, which ``requests``
+        surfaces as a connection reset; a 413 is the other valid outcome.
+        """
         oversized = "0" * (MCP_MAX_CONTENT_LENGTH + 1)
-        response = self._post_rpc(oversized)
+        try:
+            response = self._post_rpc(oversized)
+        except requests.exceptions.ConnectionError:
+            return
         self.assertEqual(response.status_code, 413)
 
     def test_unsupported_protocol_version_header_returns_400(self):

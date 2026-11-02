@@ -14,18 +14,19 @@ import time
 from datetime import datetime, timedelta
 
 from odoo.tests import common, tagged
+from .common import McpHttpCase
 
 from ..controllers import rate_limiting, utils
 from .test_helpers import create_test_user
 
 
 @tagged("much_unit", "post_install", "-at_install")
-class TestMcpRateLimit(common.HttpCase):
+class TestMcpRateLimit(McpHttpCase):
     """Per-request rate limiting on the native ``/mcp`` endpoint."""
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
         rate_limiting._api_limiter.clear()
 
         unique_id = str(int(time.time() * 1000))[-6:]
@@ -35,25 +36,25 @@ class TestMcpRateLimit(common.HttpCase):
             f"mcp_rl_user_{unique_id}",
             email=f"mcp_rl_{unique_id}@example.com",
         )
-        self.api_key = self.env(user=self.mcp_user)["res.users.apikeys"]._generate(
+        self.api_key = self.env(user=self.mcp_user)["res.users.apikeys"].sudo()._generate(
             "rpc", "Rate Limit Key", datetime.now() + timedelta(days=30)
         )
 
         self.params = self.env["ir.config_parameter"].sudo()
-        self._orig_limit = self.params.get_param("mcp_server.request_limit", "300")
-        self._orig_enabled = self.params.get_param(
+        self._orig_limit = self.params.get_str("mcp_server.request_limit", "300")
+        self._orig_enabled = self.params.get_str(
             "mcp_server.enable_rate_limiting", "True"
         )
-        self.params.set_param("mcp_server.enabled", "True")
-        self.params.set_param("mcp_server.enable_logging", "True")
+        self.params.set_str("mcp_server.enabled", "True")
+        self.params.set_str("mcp_server.enable_logging", "True")
         # Enable the limiter explicitly: it defaults to "False", so without this
         # the 429 test only passes on a DB where the flag was left on manually.
-        self.params.set_param("mcp_server.enable_rate_limiting", "True")
-        utils.clear_mcp_caches()
+        self.params.set_str("mcp_server.enable_rate_limiting", "True")
+        utils.clear_mcp_caches(self.env)
 
     def tearDown(self):
-        self.params.set_param("mcp_server.request_limit", self._orig_limit)
-        self.params.set_param("mcp_server.enable_rate_limiting", self._orig_enabled)
+        self.params.set_str("mcp_server.request_limit", self._orig_limit)
+        self.params.set_str("mcp_server.enable_rate_limiting", self._orig_enabled)
         rate_limiting._api_limiter.clear()
         super().tearDown()
 
@@ -76,8 +77,8 @@ class TestMcpRateLimit(common.HttpCase):
         rate_limiting._api_limiter.clear()
         # The minimum enforced limit is 10, so the 11th *counting* request is the
         # first one refused (check-then-record: 10 recorded -> 11th check fails).
-        self.params.set_param("mcp_server.request_limit", "10")
-        utils.clear_mcp_caches()
+        self.params.set_str("mcp_server.request_limit", "10")
+        utils.clear_mcp_caches(self.env)
 
         statuses = [self._tools_list().status_code for _ in range(11)]
         self.assertEqual(statuses[:10], [200] * 10, msg=statuses)
@@ -115,9 +116,9 @@ class TestMcpRateLimit(common.HttpCase):
     def test_rate_limiting_disabled_skips_429(self):
         """With the master switch off, the 429 path is skipped entirely."""
         rate_limiting._api_limiter.clear()
-        self.params.set_param("mcp_server.request_limit", "10")
-        self.params.set_param("mcp_server.enable_rate_limiting", "False")
-        utils.clear_mcp_caches()
+        self.params.set_str("mcp_server.request_limit", "10")
+        self.params.set_str("mcp_server.enable_rate_limiting", "False")
+        utils.clear_mcp_caches(self.env)
 
         statuses = [self._tools_list().status_code for _ in range(15)]
         self.assertEqual(statuses, [200] * 15, msg=statuses)
@@ -130,8 +131,8 @@ class TestMcpRateLimit(common.HttpCase):
         channel that still costs an auth lookup + audit write per request.
         """
         rate_limiting._api_limiter.clear()
-        self.params.set_param("mcp_server.request_limit", "10")
-        utils.clear_mcp_caches()
+        self.params.set_str("mcp_server.request_limit", "10")
+        utils.clear_mcp_caches(self.env)
 
         bogus = {"jsonrpc": "2.0", "method": "notifications/bogus"}
         statuses = [self._post_rpc(bogus).status_code for _ in range(11)]
@@ -142,8 +143,8 @@ class TestMcpRateLimit(common.HttpCase):
     def test_spec_notification_is_exempt_from_limit(self):
         """``notifications/initialized`` is acked even while over the limit."""
         rate_limiting._api_limiter.clear()
-        self.params.set_param("mcp_server.request_limit", "10")
-        utils.clear_mcp_caches()
+        self.params.set_str("mcp_server.request_limit", "10")
+        utils.clear_mcp_caches(self.env)
 
         init = {"jsonrpc": "2.0", "method": "notifications/initialized"}
         statuses = [self._post_rpc(init).status_code for _ in range(15)]

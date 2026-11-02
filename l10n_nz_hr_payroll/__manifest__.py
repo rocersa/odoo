@@ -7,7 +7,7 @@
         See README.md for the detailed report.
     """,
     'category': 'Human Resources/Payroll',
-    'version': '1.0.0',
+    'version': '20.0.1.0.0',
     'depends': ['hr_payroll', 'l10n_nz'],
     'data': [],
     'installable': False,

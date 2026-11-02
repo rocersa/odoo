@@ -42,9 +42,9 @@ class ProductPricelistItem(models.Model):
             else:
                 super(ProductPricelistItem, item)._compute_name()
 
-    def _is_applicable_for(self, product, qty_in_product_uom):
+    def _is_applicable_for(self, product, quantity, *, uom=None, **kwargs):
         """Extend to check area filter on template-level rules."""
-        res = super()._is_applicable_for(product, qty_in_product_uom)
+        res = super()._is_applicable_for(product, quantity, uom=uom, **kwargs)
         if not res or not self.has_area_filter:
             return res
 

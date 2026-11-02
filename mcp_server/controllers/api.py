@@ -9,7 +9,6 @@ from odoo import http
 from odoo.http import request
 from odoo.service import (
     common as common_service_root,
-    db as db_service_root,
     model as model_service_root,
 )
 
@@ -98,19 +97,6 @@ class MCPCommonController(http.Controller):
     def index(self, **kwargs):
         return _dispatch_service_xmlrpc(
             "MCPCommonController", common_service_root.dispatch
-        )
-
-
-class MCPDatabaseController(http.Controller):
-    # auth="none"/csrf=False: stateless XML-RPC proxy, same rationale as
-    # /mcp/xmlrpc/common -- no session cookie, so no CSRF surface (mirrors stock
-    # /xmlrpc/2/db); the global MCP kill-switch is checked inside dispatch.
-    @http.route(
-        "/mcp/xmlrpc/db", type="http", auth="none", methods=["POST"], csrf=False
-    )
-    def index(self, **kwargs):
-        return _dispatch_service_xmlrpc(
-            "MCPDatabaseController", db_service_root.dispatch
         )
 
 

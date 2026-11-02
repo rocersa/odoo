@@ -13,7 +13,7 @@ class TestMcpUtils(common.TransactionCase):
 
     def setUp(self):
         super().setUp()
-        utils.clear_mcp_caches()
+        utils.clear_mcp_caches(self.env)
 
         # Create test user with unique login to avoid conflicts
         import time
@@ -26,12 +26,12 @@ class TestMcpUtils(common.TransactionCase):
         )
 
         env_as_user = self.env(user=self.test_user)
-        self.valid_api_key = env_as_user["res.users.apikeys"]._generate(
+        self.valid_api_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "Test Utils API Key", datetime.now() + timedelta(days=30)
         )
 
         # Enable MCP globally
-        self.env["ir.config_parameter"].sudo().set_param("mcp_server.enabled", "True")
+        self.env["ir.config_parameter"].sudo().set_str("mcp_server.enabled", "True")
 
         # Create or get existing test enabled model for res.partner
         partner_model_id = self.env.ref("base.model_res_partner").id
@@ -91,21 +91,21 @@ class TestMcpUtils(common.TransactionCase):
         mock_request.env = self.env
         with patch("odoo.addons.mcp_server.controllers.utils.request", mock_request):
             params = self.env["ir.config_parameter"].sudo()
-            params.set_param("mcp_server.enabled", "True")
-            utils.clear_mcp_caches()
+            params.set_str("mcp_server.enabled", "True")
+            utils.clear_mcp_caches(self.env)
             self.assertTrue(utils.is_mcp_enabled())  # primes the ormcache -> True
 
             # Force the underlying param read to report False WITHOUT going
             # through set_param (which would itself invalidate the ORM caches):
             # the primed True is still served, proving it is cached, not re-read.
             with patch.object(
-                type(params), "get_param", return_value="False"
+                type(params), "get_str", return_value="False"
             ):
                 self.assertTrue(utils.is_mcp_enabled())
 
                 # clear_mcp_caches flushes the ormcache -> the next call re-reads
                 # (now the patched False), proving invalidation, not a TTL.
-                utils.clear_mcp_caches()
+                utils.clear_mcp_caches(self.env)
                 self.assertFalse(utils.is_mcp_enabled())
 
     def test_sanitize_model_name_valid(self):
@@ -142,17 +142,17 @@ class TestMcpUtils(common.TransactionCase):
 
         with patch("odoo.addons.mcp_server.controllers.utils.request", mock_request):
             # Test when enabled
-            self.env["ir.config_parameter"].sudo().set_param(
+            self.env["ir.config_parameter"].sudo().set_str(
                 "mcp_server.enabled", "True"
             )
-            utils.clear_mcp_caches()
+            utils.clear_mcp_caches(self.env)
             self.assertTrue(utils.is_mcp_enabled())
 
             # Test when disabled
-            self.env["ir.config_parameter"].sudo().set_param(
+            self.env["ir.config_parameter"].sudo().set_str(
                 "mcp_server.enabled", "False"
             )
-            utils.clear_mcp_caches()
+            utils.clear_mcp_caches(self.env)
             self.assertFalse(utils.is_mcp_enabled())
 
     def test_is_model_mcp_enabled(self):
@@ -338,10 +338,11 @@ class TestMcpUtils(common.TransactionCase):
         mock_request.env = self.env
         with patch("odoo.addons.mcp_server.controllers.utils.request", mock_request):
             params = self.env["ir.config_parameter"].sudo()
-            params.set_param("mcp_server.enabled", "True")
-            params.set_param("mcp_server.enable_oauth", "True")
-            params.set_param("mcp_server.allowed_origins", "https://a.example.com")
-            self.env.registry.clear_cache()
+            params.set_str("mcp_server.enabled", "True")
+            params.set_str("mcp_server.enable_oauth", "True")
+            params.set_str("mcp_server.allowed_origins", "https://a.example.com")
+            self.env.transaction.invalidate_ormcache('default')
+            self.env.transaction.invalidate_ormcache('stable')
             self.assertTrue(utils.is_mcp_enabled())
             self.assertTrue(utils.is_oauth_enabled(self.env))
             self.assertEqual(
@@ -349,10 +350,11 @@ class TestMcpUtils(common.TransactionCase):
             )
 
             # Flip every switch and invalidate exactly the way the write path does.
-            params.set_param("mcp_server.enabled", "False")
-            params.set_param("mcp_server.enable_oauth", "False")
-            params.set_param("mcp_server.allowed_origins", "https://b.example.com")
-            self.env.registry.clear_cache()
+            params.set_str("mcp_server.enabled", "False")
+            params.set_str("mcp_server.enable_oauth", "False")
+            params.set_str("mcp_server.allowed_origins", "https://b.example.com")
+            self.env.transaction.invalidate_ormcache('default')
+            self.env.transaction.invalidate_ormcache('stable')
             self.assertFalse(utils.is_mcp_enabled())
             self.assertFalse(utils.is_oauth_enabled(self.env))
             self.assertEqual(
@@ -384,7 +386,7 @@ class TestAuthAndResponseUtils(common.TransactionCase):
         )
 
         env_as_user = self.env(user=self.test_user)
-        self.valid_api_key = env_as_user["res.users.apikeys"]._generate(
+        self.valid_api_key = env_as_user["res.users.apikeys"].sudo()._generate(
             "rpc", "Test Auth API Key", datetime.now() + timedelta(days=30)
         )
 

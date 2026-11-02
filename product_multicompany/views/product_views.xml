@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Add a per-product Catalogs field on the Sales tab of the product template form. -->
+    <!-- Add a per-product Catalogs field on the General Information tab of the
+         product template form. Odoo 20 moved product_tag_ids out of the old
+         Sales > extra_info group into group_general. -->
     <record id="view_product_template_form_multicompany" model="ir.ui.view">
         <field name="name">product.template.form.multicompany</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='sales']//group[@name='extra_info']/field[@name='product_tag_ids']" position="after">
+            <xpath expr="//page[@name='general_information']//group[@name='group_general']/field[@name='product_tag_ids']" position="after">
                 <field name="company_ids" widget="many2many_tags"/>
             </xpath>
         </field>

@@ -31,14 +31,14 @@
 
     'author': "Harry",
     'category': 'Accounting/Reporting',
-    'version': '0.10',
+    'version': '20.0.1.0.0',
 
     'depends': ['account', 'sale', 'crm'],
     'installable': True,
     'application': False,
     'license': 'AGPL-3',
     'data': [
-        'security/ir.model.access.csv',
+        'security/ir.access.csv',
         'views/account_invoice_report_views.xml',
         'views/rocersa_invoice_report_views.xml',
     ],
