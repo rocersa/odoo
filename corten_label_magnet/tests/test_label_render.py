@@ -32,7 +32,7 @@ class TestLabelRender(TransactionCase):
 
     def test_location_lines(self):
         self.assertEqual(derive_location("AUC/UCC/R01/B03-L2"), ("UCC / R01", "B03-L2"))
-        self.assertEqual(derive_location("AUC/Stock/Unit 1"), ("", "Unit 1"))
+        self.assertEqual(derive_location("AUC/Stock/Unit 1"), ("Stock", "Unit 1"))
         self.assertEqual(derive_location("AUC/S/U3/R01/B03"), ("S / U3 / R01", "B03"))
         self.assertEqual(derive_location("AUC/S/U3/R01/B03/L0"), ("S / U3 / R01 / B03", "L0"))
         self.assertEqual(derive_location("C-R01-B03-L2"), ("", "C-R01-B03-L2"))

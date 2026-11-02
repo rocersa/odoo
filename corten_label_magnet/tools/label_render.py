@@ -188,17 +188,14 @@ def _barcode(draw, data, x_mm, y_mm, w_mm, h_mm, dpi):
 def derive_location(code: str):
     """Split a location path into (small line, big line).
 
-    Only "/" separates path segments: the leaf name may itself contain spaces
-    ("Unit 1"). The small parent line is shown for a coded position (B03, L0,
-    B03-L2); a readable leaf such as "Unit 1" prints on its own.
+    Only "/" separates path segments, so a leaf name may contain spaces
+    ("Unit 1"). The parent path (without the warehouse root) is the small line
+    above the leaf; the leaf is the big line.
     """
     parts = [p for p in code.strip().split("/") if p]
     if not parts:
         return "", code
-    big = parts[-1]
-    if len(parts) >= 3 and " " not in big:
-        return " / ".join(parts[1:-1]), big
-    return "", big
+    return " / ".join(parts[1:-1]), parts[-1]
 
 
 def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM):
