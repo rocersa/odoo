@@ -10,6 +10,16 @@
                          help="Hide checkout and replace it with a quote-request button on this website's cart.">
                     <field name="is_disable_checkout"/>
                 </setting>
+                <setting id="rocersa_quote_lead_setting"
+                         help="Create the shared Supabase lead for each quote request. The Odoo order remains the fulfilment record.">
+                    <field name="website_quote_lead_enabled"/>
+                </setting>
+                <setting id="rocersa_quote_lead_connection"
+                         invisible="not website_quote_lead_enabled"
+                         help="Connection for the shared Supabase leads table. The service key comes from the SUPABASE_SERVICE_KEY environment variable.">
+                    <field name="website_quote_supabase_url" placeholder="https://xxxx.supabase.co"/>
+                    <field name="website_quote_subdivision_id"/>
+                </setting>
             </xpath>
         </field>
     </record>

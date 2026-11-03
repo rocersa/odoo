@@ -13,6 +13,7 @@
                 <field name="rfq_utm_medium" invisible="not rfq_utm_medium"/>
                 <field name="rfq_utm_campaign" invisible="not rfq_utm_campaign"/>
                 <field name="rfq_landing_page" invisible="not rfq_landing_page"/>
+                <field name="supabase_lead_id" invisible="not supabase_lead_id"/>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Quote Request" name="rfq_message"

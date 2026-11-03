@@ -13,6 +13,9 @@ class SaleOrder(models.Model):
     rfq_utm_medium = fields.Char(string="UTM Medium")
     rfq_utm_campaign = fields.Char(string="UTM Campaign")
     rfq_landing_page = fields.Char(string="Landing Page")
+    supabase_lead_id = fields.Char(
+        string="Supabase Lead ID", readonly=True, copy=False, index=True
+    )
 
     def _apply_website_rfq(self, partner, message=None, attribution=None, company=None):
         """Attach the quote contact, flag the cart as an RFQ and send it.

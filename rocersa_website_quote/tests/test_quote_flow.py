@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import os
+from unittest.mock import patch
+
 from odoo.addons.website_sale.tests.common import WebsiteSaleCommon
 from odoo.tests import HttpCase, tagged
 
@@ -19,7 +22,15 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
         )
         cls.QuoteController = WebsiteQuote()
 
-    def _submit(self, **overrides):
+    def _enable_lead_write(self):
+        params = self.env["ir.config_parameter"].sudo()
+        params.set_str("rocersa_website_quote.lead_enabled", "True")
+        params.set_str(
+            "rocersa_website_quote.supabase_url", "https://example.supabase.co"
+        )
+        params.set_str("rocersa_website_quote.subdivision_id", "2")
+
+    def _submit(self, cookies=None, **overrides):
         data = {
             "name": "Guest Buyer",
             "email": "guest@example.com",
@@ -36,7 +47,7 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
         with self.mock_request(
             sale_order_id=self.cart.id,
             user=self.public_user,
-            cookies={"gclid": "test-gclid"},
+            cookies=cookies or {"gclid": "test-gclid"},
         ):
             return self.QuoteController.shop_quote_submit(**data)
 
@@ -88,6 +99,65 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
         recipients = {mail.email_to for mail in mails}
         self.assertIn("guest@example.com", recipients)
         self.assertIn("company@example.com", recipients)
+
+    def test_guest_quote_writes_supabase_lead(self):
+        self._enable_lead_write()
+        with patch.dict(os.environ, {"SUPABASE_SERVICE_KEY": "test-key"}):
+            with patch(
+                "odoo.addons.rocersa_website_quote.models.supabase_lead.requests.post"
+            ) as post:
+                post.return_value.json.return_value = [{"id": 42}]
+                post.return_value.raise_for_status.return_value = None
+                response = self._submit(
+                    cookies={"gclid": "test-gclid", "_ga": "GA1.1.123.456"}
+                )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.cart.supabase_lead_id, "42")
+        args, kwargs = post.call_args
+        self.assertEqual(args[0], "https://example.supabase.co/rest/v1/leads")
+        self.assertEqual(kwargs["headers"]["apikey"], "test-key")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-key")
+        self.assertEqual(kwargs["json"], {
+            "client_id": "123.456",
+            "email": "guest@example.com",
+            "subdivision_id": 2,
+            "gclid": "test-gclid",
+            "phone": "+61400000000",
+        })
+
+    def test_supabase_lead_write_is_off_by_default(self):
+        self.env["ir.config_parameter"].sudo().set_str(
+            "rocersa_website_quote.lead_enabled", "False"
+        )
+        with patch(
+            "odoo.addons.rocersa_website_quote.models.supabase_lead.requests.post"
+        ) as post:
+            response = self._submit()
+        self.assertEqual(response.status_code, 200)
+        post.assert_not_called()
+        self.assertFalse(self.cart.supabase_lead_id)
+
+    def test_supabase_lead_write_needs_the_service_key(self):
+        self._enable_lead_write()
+        with patch.dict(os.environ, {"SUPABASE_SERVICE_KEY": ""}):
+            with patch(
+                "odoo.addons.rocersa_website_quote.models.supabase_lead.requests.post"
+            ) as post:
+                response = self._submit()
+        self.assertEqual(response.status_code, 200)
+        post.assert_not_called()
+        self.assertFalse(self.cart.supabase_lead_id)
+
+    def test_supabase_lead_failure_does_not_fail_the_quote(self):
+        self._enable_lead_write()
+        with patch.dict(os.environ, {"SUPABASE_SERVICE_KEY": "test-key"}):
+            with patch(
+                "odoo.addons.rocersa_website_quote.models.supabase_lead.requests.post"
+            ) as post:
+                post.return_value.raise_for_status.side_effect = RuntimeError("down")
+                response = self._submit()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.cart.supabase_lead_id)
 
     def test_cart_renders_quote_cta_and_guest_modal(self):
         self.website.sudo().write({"is_disable_checkout": True})

@@ -59,6 +59,24 @@ class WebsiteQuote(http.Controller):
             attribution["rfq_landing_page"] = landing[:255]
         return attribution
 
+    def _client_id(self):
+        """The GA client id, matching the other storefronts' lead rows."""
+        ga = request.httprequest.cookies.get("_ga")
+        return ga[6:] if ga and len(ga) > 6 else ""
+
+    def _write_supabase_lead(self, order):
+        """Project the quote to the shared Supabase leads row.
+
+        The write is off by default and never fails the quote; the service
+        logs and returns False on error.
+        """
+        try:
+            request.env["rocersa.website.quote.lead"].sudo().create_for_order(
+                order, self._client_id()
+            )
+        except Exception:  # noqa: BLE001 - a lead failure must not fail the RFQ
+            _logger.exception("Supabase lead write raised for %s", order.name)
+
     def _send_quote_emails(self, order):
         """Email the customer and the website company (the current Gmail flow).
 
@@ -106,6 +124,7 @@ class WebsiteQuote(http.Controller):
             return request.redirect("/shop/cart")
         order._apply_website_rfq(request.env.user.partner_id)
         self._send_quote_emails(order)
+        self._write_supabase_lead(order)
         return request.render(
             "rocersa_website_quote.quote_thank_you", {"order": order}
         )
@@ -137,6 +156,7 @@ class WebsiteQuote(http.Controller):
                 company=post.get("company_name"),
             )
             self._send_quote_emails(order)
+            self._write_supabase_lead(order)
         except UserError as err:
             return request.render(
                 "rocersa_website_quote.quote_error", {"error": str(err)}
