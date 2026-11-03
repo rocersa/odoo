@@ -20,6 +20,10 @@
                     <field name="website_quote_supabase_url" placeholder="https://xxxx.supabase.co"/>
                     <field name="website_quote_subdivision_id"/>
                 </setting>
+                <setting id="rocersa_quote_posthog_setting"
+                         help="Send quote_request_submitted to PostHog using the website's project key and host (configure them in the PostHog settings).">
+                    <field name="website_quote_posthog_enabled"/>
+                </setting>
             </xpath>
         </field>
     </record>

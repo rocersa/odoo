@@ -33,3 +33,9 @@ class ResConfigSettings(models.TransientModel):
         default=2,
         help="Supabase subdivisions.id for this website. AU Corten is 2.",
     )
+    website_quote_posthog_enabled = fields.Boolean(
+        string="Send quote_request_submitted to PostHog",
+        config_parameter="rocersa_website_quote.posthog_event_enabled",
+        help="Send the quote event with the website's PostHog project key "
+             "and host. Off by default because it writes live analytics data.",
+    )

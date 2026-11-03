@@ -8,7 +8,15 @@ export class QuoteForm extends Interaction {
 
     dynamicContent = {
         "#rocersa_quote_country": { "t-on-change": this.onCountryChange },
+        "#rocersa_quote_form": { "t-on-submit": this.onSubmit },
     };
+
+    onSubmit() {
+        const input = this.el.querySelector('[name="posthog_distinct_id"]');
+        if (input && window.posthog && window.posthog.get_distinct_id) {
+            input.value = window.posthog.get_distinct_id() || "";
+        }
+    }
 
     setup() {
         const params = new URLSearchParams(window.location.search);

@@ -47,6 +47,7 @@
                         <input type="hidden" name="utm_medium" value=""/>
                         <input type="hidden" name="utm_campaign" value=""/>
                         <input type="hidden" name="landing_page" t-att-value="request.httprequest.url"/>
+                        <input type="hidden" name="posthog_distinct_id" value=""/>
                         <div class="modal-header">
                             <h5 class="modal-title" id="rocersa_quote_modal_label">Request a Quote</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

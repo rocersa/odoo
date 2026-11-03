@@ -2,11 +2,11 @@
 {
     "name": "Website Quote Request",
     "summary": "Replace checkout with a quote request (cart -> RFQ) per website",
-    "version": "20.0.1.0.4",
+    "version": "20.0.1.0.5",
     "category": "Website",
     "author": "Rocersa",
     "license": "AGPL-3",
-    "depends": ["website_sale"],
+    "depends": ["website_sale", "website_posthog_experiments"],
     "data": [
         "views/website_quote_templates.xml",
         "views/sale_order_views.xml",

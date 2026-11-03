@@ -30,6 +30,15 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
         )
         params.set_str("rocersa_website_quote.subdivision_id", "2")
 
+    def _enable_posthog_event(self):
+        self.env["ir.config_parameter"].sudo().set_str(
+            "rocersa_website_quote.posthog_event_enabled", "True"
+        )
+        self.website.sudo().write({
+            "posthog_api_key": "phc_test",
+            "posthog_host": "https://posthog.example",
+        })
+
     def _submit(self, cookies=None, **overrides):
         data = {
             "name": "Guest Buyer",
@@ -158,6 +167,57 @@ class TestQuoteFlow(WebsiteSaleCommon, HttpCase):
                 response = self._submit()
         self.assertEqual(response.status_code, 200)
         self.assertFalse(self.cart.supabase_lead_id)
+
+    def test_guest_quote_fires_posthog_event(self):
+        self._enable_posthog_event()
+        with patch(
+            "odoo.addons.rocersa_website_quote.models.posthog_quote.requests.post"
+        ) as post:
+            post.return_value.raise_for_status.return_value = None
+            response = self._submit(posthog_distinct_id="ph-distinct-1")
+        self.assertEqual(response.status_code, 200)
+        args, kwargs = post.call_args
+        self.assertEqual(args[0], "https://posthog.example/capture/")
+        payload = kwargs["json"]
+        self.assertEqual(payload["api_key"], "phc_test")
+        self.assertEqual(payload["event"], "quote_request_submitted")
+        properties = payload["properties"]
+        self.assertEqual(properties["distinct_id"], "ph-distinct-1")
+        self.assertTrue(properties["has_message"])
+        self.assertEqual(
+            properties["item_count"], len(self.cart.website_order_line)
+        )
+
+    def test_posthog_event_is_off_by_default(self):
+        self.env["ir.config_parameter"].sudo().set_str(
+            "rocersa_website_quote.posthog_event_enabled", "False"
+        )
+        self.website.sudo().write({"posthog_api_key": "phc_test"})
+        with patch(
+            "odoo.addons.rocersa_website_quote.models.posthog_quote.requests.post"
+        ) as post:
+            self._submit(posthog_distinct_id="ph-distinct-1")
+        post.assert_not_called()
+
+    def test_posthog_event_needs_the_website_key(self):
+        self.env["ir.config_parameter"].sudo().set_str(
+            "rocersa_website_quote.posthog_event_enabled", "True"
+        )
+        self.website.sudo().write({"posthog_api_key": False})
+        with patch(
+            "odoo.addons.rocersa_website_quote.models.posthog_quote.requests.post"
+        ) as post:
+            self._submit(posthog_distinct_id="ph-distinct-1")
+        post.assert_not_called()
+
+    def test_posthog_failure_does_not_fail_the_quote(self):
+        self._enable_posthog_event()
+        with patch(
+            "odoo.addons.rocersa_website_quote.models.posthog_quote.requests.post"
+        ) as post:
+            post.return_value.raise_for_status.side_effect = RuntimeError("down")
+            response = self._submit(posthog_distinct_id="ph-distinct-1")
+        self.assertEqual(response.status_code, 200)
 
     def test_cart_renders_quote_cta_and_guest_modal(self):
         self.website.sudo().write({"is_disable_checkout": True})

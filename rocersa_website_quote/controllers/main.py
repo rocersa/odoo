@@ -77,6 +77,27 @@ class WebsiteQuote(http.Controller):
         except Exception:  # noqa: BLE001 - a lead failure must not fail the RFQ
             _logger.exception("Supabase lead write raised for %s", order.name)
 
+    def _posthog_distinct_id(self, post):
+        """The browser's PostHog id, so the event joins the page-view person."""
+        value = (post or {}).get("posthog_distinct_id")
+        if value:
+            return value[:200]
+        getter = getattr(request.website, "_get_posthog_distinct_id", None)
+        if getter:
+            try:
+                return getter(request)
+            except Exception:  # noqa: BLE001
+                _logger.exception("PostHog distinct id lookup failed")
+        return request.env.user.partner_id.email or ""
+
+    def _fire_posthog_event(self, order, post):
+        try:
+            request.env["rocersa.website.quote.posthog"].sudo().capture(
+                order, self._posthog_distinct_id(post)
+            )
+        except Exception:  # noqa: BLE001 - analytics must not fail the RFQ
+            _logger.exception("PostHog quote event raised for %s", order.name)
+
     def _send_quote_emails(self, order):
         """Email the customer and the website company (the current Gmail flow).
 
@@ -125,6 +146,7 @@ class WebsiteQuote(http.Controller):
         order._apply_website_rfq(request.env.user.partner_id)
         self._send_quote_emails(order)
         self._write_supabase_lead(order)
+        self._fire_posthog_event(order, {})
         return request.render(
             "rocersa_website_quote.quote_thank_you", {"order": order}
         )
@@ -157,6 +179,7 @@ class WebsiteQuote(http.Controller):
             )
             self._send_quote_emails(order)
             self._write_supabase_lead(order)
+            self._fire_posthog_event(order, post)
         except UserError as err:
             return request.render(
                 "rocersa_website_quote.quote_error", {"error": str(err)}
