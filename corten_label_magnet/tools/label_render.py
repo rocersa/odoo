@@ -313,8 +313,14 @@ def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM,
 
 
 def render_png(kind, code, *, name=None, detail=None, dpi=600,
-               length_mm=LABEL_W_MM, image=None) -> bytes:
-    """Return the rotated, print-oriented PNG bytes for one label."""
+               length_mm=LABEL_W_MM, image=None, mono=False) -> bytes:
+    """Return the rotated, print-oriented PNG bytes for one label.
+
+    `mono` thresholds the artwork to one bit instead of leaving the type
+    antialiased. The printer is one-bit, and dithering antialiased type is what
+    makes it look fuzzy; the photo panel is already halftoned, so a threshold
+    leaves it alone.
+    """
     try:
         img = draw_label(kind, code, dpi, name=name, detail=detail,
                          length_mm=length_mm, image=image)
@@ -326,6 +332,10 @@ def render_png(kind, code, *, name=None, detail=None, dpi=600,
         img = draw_label(kind, code, dpi, name=name, detail=detail,
                          length_mm=length_mm)
     rotated = img.rotate(-90, expand=True)
+    if mono:
+        rotated = (rotated.convert("L")
+                   .point(lambda v: 255 if v >= 128 else 0)
+                   .convert("1", dither=Image.Dither.NONE))
     buf = io.BytesIO()
     rotated.save(buf, format="PNG", dpi=(dpi, dpi))
     return buf.getvalue()

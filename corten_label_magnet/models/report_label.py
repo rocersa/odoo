@@ -70,13 +70,15 @@ def label_values(env, docids, data, length_mm, with_image=False):
         image = _product_image(record) if with_image and kind == "product" else None
         try:
             png = render_png(kind, code, name=name, detail=detail,
-                             dpi=600, length_mm=length_mm, image=image)
+                             dpi=203.2, length_mm=length_mm, image=image,
+                             mono=True)
         except ValueError as exc:
             # A barcode value outside printable ASCII: still print the label,
             # without bars, rather than fail the whole run.
             _logger.warning("Magnet label dropped the barcode for %r: %s", code, exc)
             png = render_png(kind, "", name=name, detail=detail,
-                             dpi=600, length_mm=length_mm, image=image)
+                             dpi=203.2, length_mm=length_mm, image=image,
+                             mono=True)
         labels[record.id] = base64.b64encode(png)
 
     return {

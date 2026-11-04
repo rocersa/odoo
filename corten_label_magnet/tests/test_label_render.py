@@ -48,6 +48,10 @@ class TestLabelRender(TransactionCase):
                                               dpi=203.2, length_mm=120))) as img:
             # The image variant is 120 mm along the feed.
             self.assertEqual(img.size, (576, 960))
+        with Image.open(io.BytesIO(render_png("location", "AUC/UCC/R01/B03-L2",
+                                              dpi=203.2, mono=True))) as img:
+            # The report asks for one bit: dithering antialiased type fuzzes it.
+            self.assertEqual(img.mode, "1")
 
     def test_image_variant_halftones_the_photo(self):
         photo = io.BytesIO()
@@ -113,8 +117,11 @@ class TestLabelRender(TransactionCase):
             self.assertEqual(values["docs"], product)
             self.assertEqual(values["copies"][product.id], 3)
             self.assertEqual(values["page_h"], page_h)
-            self.assertEqual(
-                base64.b64decode(values["labels"][product.id])[:4], b"\x89PNG")
+            png = base64.b64decode(values["labels"][product.id])
+            self.assertEqual(png[:4], b"\x89PNG")
+            with Image.open(io.BytesIO(png)) as img:
+                self.assertEqual(img.mode, "1")
+                self.assertEqual(img.size, (576, page_h * 8))
 
     def test_location_reports_are_bound(self):
         actions = self.env["ir.actions.report"].search([
