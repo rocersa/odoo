@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Corten Magnet Label",
-    "version": "19.0.1.0.17",
+    "version": "19.0.1.0.18",
     "summary": "Print the magnetic C-channel label for a product or storage location",
     "description": """
 Magnetic label report
 =====================
 
-Adds **Print → Magnet Label** to products and storage locations. The report is
-the 72 x 70 mm mono artwork for the AMF 80 mm C-channel magnetic strip, printed
-on the Epson TM-m30III: barcode, human-readable code and the Odoo record name.
+Adds **Print → Magnet Label** to products and storage locations. The reports are
+the mono artwork for the AMF 80 mm C-channel magnetic strip, printed on the
+Epson TM-m30III: barcode, human-readable code and the Odoo record name. A third
+variant adds the product photo as a one-bit halftone on a 72 x 120 mm label.
 
 The artwork is rendered server-side as a PNG and embedded in a true-size PDF,
 so the Odoo preview is what the printer receives. Code 128B is encoded in the

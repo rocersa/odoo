@@ -1,7 +1,8 @@
 """Report models: render the label images the QWeb templates embed.
 
 Rendering lives here, not in computed fields, because the label length is a
-choice made in the Print Labels wizard (70 mm or 100 mm along the strip).
+choice made in the Print Labels wizard (70 mm, 100 mm, or 120 mm with the
+product image).
 """
 from __future__ import annotations
 
@@ -10,12 +11,13 @@ import logging
 
 from odoo import models
 
-from ..tools.label_render import render_png
+from ..tools.label_render import LABEL_IMAGE_LENGTH_MM, render_png
 
 _logger = logging.getLogger(__name__)
 
 LENGTH_STANDARD = 70.0
 LENGTH_WIDE = 100.0
+LENGTH_IMAGE = LABEL_IMAGE_LENGTH_MM
 
 
 def _label_fields(record):
@@ -31,7 +33,26 @@ def _label_fields(record):
             record.complete_name or record.name)
 
 
-def label_values(env, docids, data, length_mm):
+def _product_image(record):
+    """Raw bytes of the product photo, or None when the product has none.
+
+    The 1024 px size is ample for the 50 mm panel at 203 dpi and keeps the
+    report memory small. The image is optional: no photo still prints a label.
+    """
+    if record._name not in ("product.product", "product.template"):
+        return None
+    value = (getattr(record, "image_1024", False)
+             or getattr(record, "image_512", False)
+             or getattr(record, "image_1920", False))
+    if not value:
+        return None
+    try:
+        return base64.b64decode(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def label_values(env, docids, data, length_mm, with_image=False):
     data = data or {}
     quantities = data.get("quantity_by_product") or {}
     active_model = data.get("active_model")
@@ -46,15 +67,16 @@ def label_values(env, docids, data, length_mm):
     labels = {}
     for record in docs:
         kind, name, code, detail = _label_fields(record)
+        image = _product_image(record) if with_image and kind == "product" else None
         try:
             png = render_png(kind, code, name=name, detail=detail,
-                             dpi=600, length_mm=length_mm)
+                             dpi=600, length_mm=length_mm, image=image)
         except ValueError as exc:
             # A barcode value outside printable ASCII: still print the label,
             # without bars, rather than fail the whole run.
             _logger.warning("Magnet label dropped the barcode for %r: %s", code, exc)
             png = render_png(kind, "", name=name, detail=detail,
-                             dpi=600, length_mm=length_mm)
+                             dpi=600, length_mm=length_mm, image=image)
         labels[record.id] = base64.b64encode(png)
 
     return {
@@ -80,3 +102,11 @@ class ReportCortenLabelWide(models.AbstractModel):
 
     def _get_report_values(self, docids, data):
         return label_values(self.env, docids, data, LENGTH_WIDE)
+
+
+class ReportCortenLabelImage(models.AbstractModel):
+    _name = "report.corten_label_magnet.report_label_image"
+    _description = "Magnet label with image (72 x 120 mm)"
+
+    def _get_report_values(self, docids, data):
+        return label_values(self.env, docids, data, LENGTH_IMAGE, with_image=True)

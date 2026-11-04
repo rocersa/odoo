@@ -6,8 +6,8 @@
         page holds it at true size with no margins and no header.
 
         page_h comes from the report model: 70 for the standard label, 100 for
-        the wide one. The block is half a millimetre under the page so it
-        cannot round onto a blank second page.
+        the wide one, 120 for the image one. The block is half a millimetre
+        under the page so it cannot round onto a blank second page.
     -->
     <template id="label_pages">
         <t t-call="web.html_container">
@@ -42,6 +42,10 @@
     </template>
 
     <template id="report_label_100">
+        <t t-call="corten_label_magnet.label_pages"/>
+    </template>
+
+    <template id="report_label_image">
         <t t-call="corten_label_magnet.label_pages"/>
     </template>
 </odoo>
