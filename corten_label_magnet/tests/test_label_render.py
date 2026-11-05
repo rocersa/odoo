@@ -44,11 +44,40 @@ class TestLabelRender(TransactionCase):
         with Image.open(io.BytesIO(render_png("product", LONGEST, name="Corner", dpi=203.2,
                                               length_mm=100))) as img:
             self.assertEqual(img.size, (576, 800))
+        with Image.open(io.BytesIO(render_png("product", "P0002308", name="Corner",
+                                              dpi=203.2, length_mm=120))) as img:
+            # The image variant is 120 mm along the feed.
+            self.assertEqual(img.size, (576, 960))
+        with Image.open(io.BytesIO(render_png("location", "AUC/UCC/R01/B03-L2",
+                                              dpi=203.2, mono=True))) as img:
+            # The report asks for one bit: dithering antialiased type fuzzes it.
+            self.assertEqual(img.mode, "1")
 
-    def test_wizard_offers_both_lengths(self):
+    def test_image_variant_halftones_the_photo(self):
+        photo = io.BytesIO()
+        Image.new("RGB", (40, 40), (252, 127, 36)).save(photo, "PNG")
+        png = render_png("product", "P0002308", name="Corten Corner",
+                         detail="Cor45deg300-150-100-3", dpi=203.2,
+                         length_mm=120, image=photo.getvalue())
+        with Image.open(io.BytesIO(png)) as img:
+            # The photo must survive as ink, not an empty panel, and the
+            # direct-thermal output stays one bit per dot.
+            self.assertEqual(img.size, (576, 960))
+            grey = img.convert("L")
+            self.assertLess(grey.getextrema()[0], 80)
+            self.assertGreater(grey.getextrema()[1], 200)
+
+    def test_bad_image_still_prints_the_barcode(self):
+        png = render_png("product", "P0002308", name="Corten Corner",
+                         dpi=203.2, length_mm=120, image=b"not an image")
+        with Image.open(io.BytesIO(png)) as img:
+            self.assertEqual(img.size, (576, 960))
+
+    def test_wizard_offers_all_lengths(self):
         field = self.env["product.label.layout"]._fields["print_format"]
         self.assertIn("corten_magnet", field.selection)
         self.assertIn("corten_magnet_100", field.selection)
+        self.assertIn("corten_magnet_image", field.selection)
 
         product = self.env["product.product"].create({
             "name": "Flamed Corten Edging 1000",
@@ -58,6 +87,8 @@ class TestLabelRender(TransactionCase):
         for fmt, xml_id in (
             ("corten_magnet", "corten_label_magnet.action_corten_label_location"),
             ("corten_magnet_100", "corten_label_magnet.action_corten_label_location_100"),
+            ("corten_magnet_image",
+             "corten_label_magnet.action_corten_label_location_image"),
         ):
             wizard = self.env["product.label.layout"].create({
                 "print_format": fmt,
@@ -77,6 +108,7 @@ class TestLabelRender(TransactionCase):
         for model, page_h in (
             ("report.corten_label_magnet.report_label", 70),
             ("report.corten_label_magnet.report_label_100", 100),
+            ("report.corten_label_magnet.report_label_image", 120),
         ):
             values = self.env[model]._get_report_values([], {
                 "active_model": "product.product",
@@ -85,12 +117,15 @@ class TestLabelRender(TransactionCase):
             self.assertEqual(values["docs"], product)
             self.assertEqual(values["copies"][product.id], 3)
             self.assertEqual(values["page_h"], page_h)
-            self.assertEqual(
-                base64.b64decode(values["labels"][product.id])[:4], b"\x89PNG")
+            png = base64.b64decode(values["labels"][product.id])
+            self.assertEqual(png[:4], b"\x89PNG")
+            with Image.open(io.BytesIO(png)) as img:
+                self.assertEqual(img.mode, "1")
+                self.assertEqual(img.size, (576, page_h * 8))
 
     def test_location_reports_are_bound(self):
         actions = self.env["ir.actions.report"].search([
             ("binding_model_id.model", "=", "stock.location"),
             ("report_name", "like", "corten_label_magnet.report_label"),
         ])
-        self.assertEqual(len(actions), 2)
+        self.assertEqual(len(actions), 3)

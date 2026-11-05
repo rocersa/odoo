@@ -1,9 +1,10 @@
 """Render the Corten magnet label to a print-ready PNG.
 
-The label is drawn in its reading orientation at 70 x 72 mm, then rotated to
-the paper's orientation (72 mm across the roll, 70 mm along the feed) because
-the Epson TM-m30III is fed the short edge. Pure black on white: the printer is
-direct-thermal and prints one colour.
+The label is drawn in its reading orientation (70 x 72 mm, or 120 x 72 mm with
+a product image), then rotated to the paper's orientation (72 mm across the
+roll, the length along the feed) because the Epson TM-m30III is fed the short
+edge. Pure black on white: the printer is direct-thermal and prints one colour,
+so a colour product image is rendered as a one-bit halftone.
 
 The equivalent offline proofing tool is the root repo's `scripts/au-label.py`.
 Geometry and type rules must stay identical; the constants below are the
@@ -15,11 +16,12 @@ import io
 import re
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 FONT_DIR = Path(__file__).resolve().parent.parent / "static" / "src" / "fonts"
 
 LABEL_W_MM = 70.0        # default along-strip length (reading orientation)
+LABEL_IMAGE_LENGTH_MM = 120.0  # image variant: image panel + text column
 LABEL_H_MM = 72.0
 MARGIN_MM = 3.0
 MARGIN_MM_RIGHT = 3.0
@@ -33,6 +35,12 @@ CODE_REF_CHARS = 8
 # The code line stops growing here; 8 characters fill the width well before it.
 CODE_MAX_CAP_MM = 7.0
 MIN_MODULE_MM = 0.19      # ~1.5 dots at 203 dpi: below this a scan is unreliable
+# Image variant: a square photo panel on the left, the type and barcode right.
+IMAGE_W_MM = 50.0
+IMAGE_H_MM = 50.0
+IMAGE_Y_MM = 13.0
+IMAGE_GAP_MM = 5.0
+IMAGE_BORDER_MM = 0.3
 
 INK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -198,13 +206,57 @@ def derive_location(code: str):
     return " / ".join(parts[1:-1]), parts[-1]
 
 
-def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM):
+def prepare_image(data, w_mm, h_mm, dpi):
+    """Fit a product image into the panel as a one-bit thermal halftone.
+
+    Colour product photos are flattened onto white, autocontrasted and
+    dithered to black/white: a direct-thermal head has no grey level, so the
+    dot pattern carries the tone. Raising ValueError lets the report drop the
+    image and still print the label rather than failing the whole run.
+    """
+    if not data:
+        raise ValueError("image data is empty")
+    try:
+        src = Image.open(io.BytesIO(data))
+        src.load()
+    except Exception as exc:  # Pillow raises a dozen parser errors
+        raise ValueError(f"image could not be read: {exc}") from exc
+    if src.mode in ("RGBA", "LA", "P"):
+        src = src.convert("RGBA")
+        plate = Image.new("RGBA", src.size, (255, 255, 255, 255))
+        src = Image.alpha_composite(plate, src)
+    src = src.convert("L")
+    src = ImageOps.autocontrast(src, cutoff=0.5)
+    target = (px(w_mm, dpi), px(h_mm, dpi))
+    src.thumbnail(target, Image.LANCZOS)
+    canvas = Image.new("L", target, 255)
+    canvas.paste(src, ((target[0] - src.width) // 2, (target[1] - src.height) // 2))
+    return canvas.convert("1", dither=Image.Dither.FLOYDSTEINBERG).convert("RGB")
+
+
+def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM,
+               image=None):
     W, H = px(length_mm, dpi), px(LABEL_H_MM, dpi)
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
     m = px(MARGIN_MM, dpi)
     right = W - px(MARGIN_MM_RIGHT, dpi)
     content_w = right - m
+
+    # The image variant gives the left of the label to the photo and sets the
+    # type in a narrower column beside it.
+    tx, text_w = m, content_w
+    with_image = kind == "product" and image is not None
+    if with_image:
+        x_mm = MARGIN_MM
+        panel = prepare_image(image, IMAGE_W_MM, IMAGE_H_MM, dpi)
+        img.paste(panel, (px(x_mm, dpi), px(IMAGE_Y_MM, dpi)))
+        border = max(1, px(IMAGE_BORDER_MM, dpi))
+        x0, y0 = px(x_mm, dpi), px(IMAGE_Y_MM, dpi)
+        x1, y1 = x0 + px(IMAGE_W_MM, dpi), y0 + px(IMAGE_H_MM, dpi)
+        d.rectangle([x0, y0, x1, y1], outline=INK, width=border)
+        tx = px(MARGIN_MM + IMAGE_W_MM + IMAGE_GAP_MM, dpi)
+        text_w = right - tx
 
     kick = _font("Archivo-700.ttf", 2.2, dpi)
     _tracked(d, m, px(HEADER_Y_MM, dpi), "COR-TEN-STEEL", kick, 0.16, dpi)
@@ -226,24 +278,24 @@ def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM)
         fbig = _fit(d, big, "IBMPlexMono-700.ttf", 13.0, content_w, dpi)
         d.text((m - px(0.3, dpi), px(big_y, dpi)), big, font=fbig, fill=INK)
     else:
-        lines, fonts = _wrap_two(d, name or "", "Archivo-900.ttf", 6.3, content_w, dpi)
+        lines, fonts = _wrap_two(d, name or "", "Archivo-900.ttf", 6.3, text_w, dpi)
         for i, (line, f) in enumerate(zip(lines, fonts)):
-            d.text((m, px(13.2 + i * 7.4, dpi)), line, font=f, fill=INK)
+            d.text((tx, px(13.2 + i * 7.4, dpi)), line, font=f, fill=INK)
         if detail:
             # One size for every product code: the longest code in stock fills
             # the label width, so shorter codes are as large as they can be
             # without a per-label size change.
             code_cap = min(CODE_MAX_CAP_MM,
                            _cap_for_chars(d, CODE_REF_CHARS, "IBMPlexMono-600.ttf",
-                                          0.11, content_w, dpi))
-            fdet = _fit(d, detail, "IBMPlexMono-600.ttf", code_cap, content_w, dpi)
-            _tracked(d, m, px(32.4, dpi), detail, fdet, 0.08, dpi)
+                                          0.11, text_w, dpi))
+            fdet = _fit(d, detail, "IBMPlexMono-600.ttf", code_cap, text_w, dpi)
+            _tracked(d, tx, px(32.4, dpi), detail, fdet, 0.08, dpi)
 
     if code:
-        if barcode_fits(code, length_mm - MARGIN_MM - MARGIN_MM_RIGHT):
+        if barcode_fits(code, text_w / _mm(dpi)):
             by = H - px(MARGIN_MM, dpi) - px(HUMAN_H_MM, dpi) - px(BARCODE_H_MM, dpi)
-            _barcode(d, code, MARGIN_MM, by * 25.4 / dpi,
-                     length_mm - MARGIN_MM - MARGIN_MM_RIGHT, BARCODE_H_MM, dpi)
+            _barcode(d, code, tx / _mm(dpi), by * 25.4 / dpi,
+                     text_w / _mm(dpi), BARCODE_H_MM, dpi)
         # Under the barcode the code stays a secondary read: cap it so it
         # clears the bottom margin on the wide label, and anchor its ink to
         # the margin rather than a fixed offset.
@@ -251,20 +303,39 @@ def draw_label(kind, code, dpi, *, name=None, detail=None, length_mm=LABEL_W_MM)
         if kind != "location" and detail:
             human_cap = min(3.0, _cap_for_chars(d, CODE_REF_CHARS,
                                                 "IBMPlexMono-600.ttf", 0.11,
-                                                content_w, dpi))
-        human = _fit(d, code, "IBMPlexMono-600.ttf", human_cap, content_w, dpi)
+                                                text_w, dpi))
+        human = _fit(d, code, "IBMPlexMono-600.ttf", human_cap, text_w, dpi)
         hw = _tracked_width(d, code, human, 0.11, dpi)
         bbox = d.textbbox((0, 0), code, font=human)
         bottom = H - px(MARGIN_MM, dpi) - px(0.3, dpi)
-        _tracked(d, (W - hw) / 2, bottom - bbox[3], code, human, 0.11, dpi)
+        _tracked(d, tx + (text_w - hw) / 2, bottom - bbox[3], code, human, 0.11, dpi)
     return img
 
 
 def render_png(kind, code, *, name=None, detail=None, dpi=600,
-               length_mm=LABEL_W_MM) -> bytes:
-    """Return the rotated, print-oriented PNG bytes for one label."""
-    img = draw_label(kind, code, dpi, name=name, detail=detail, length_mm=length_mm)
+               length_mm=LABEL_W_MM, image=None, mono=False) -> bytes:
+    """Return the rotated, print-oriented PNG bytes for one label.
+
+    `mono` thresholds the artwork to one bit instead of leaving the type
+    antialiased. The printer is one-bit, and dithering antialiased type is what
+    makes it look fuzzy; the photo panel is already halftoned, so a threshold
+    leaves it alone.
+    """
+    try:
+        img = draw_label(kind, code, dpi, name=name, detail=detail,
+                         length_mm=length_mm, image=image)
+    except ValueError:
+        if image is None:
+            raise
+        # An unreadable photo must not cost the label its barcode: retry
+        # without the panel.
+        img = draw_label(kind, code, dpi, name=name, detail=detail,
+                         length_mm=length_mm)
     rotated = img.rotate(-90, expand=True)
+    if mono:
+        rotated = (rotated.convert("L")
+                   .point(lambda v: 255 if v >= 128 else 0)
+                   .convert("1", dither=Image.Dither.NONE))
     buf = io.BytesIO()
     rotated.save(buf, format="PNG", dpi=(dpi, dpi))
     return buf.getvalue()
