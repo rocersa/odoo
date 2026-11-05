@@ -23,7 +23,10 @@ LENGTH_IMAGE = LABEL_IMAGE_LENGTH_MM
 def _label_fields(record):
     """(kind, name, barcode value, detail line) for one record."""
     if record._name == "product.product":
-        return ("product", record.display_name,
+        # display_name prefixes the default code ("[CorRin450-200-3] Corten
+        # Ring 450mm ..."); the code already has its own line on the label.
+        name = record.with_context(display_default_code=False).display_name
+        return ("product", name,
                 record.barcode or record.default_code or "", record.default_code)
     if record._name == "product.template":
         return ("product", record.name,

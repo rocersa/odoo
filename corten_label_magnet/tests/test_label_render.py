@@ -6,6 +6,7 @@ from PIL import Image
 
 from odoo.tests import TransactionCase, tagged
 
+from ..models.report_label import _label_fields
 from ..tools.label_render import (
     barcode_fits,
     derive_location,
@@ -29,6 +30,18 @@ class TestLabelRender(TransactionCase):
         self.assertTrue(barcode_fits(LONGEST))            # 70 mm label
         self.assertTrue(barcode_fits(LONGEST, 94))        # 100 mm label
         self.assertFalse(barcode_fits("CorRetKitL-Int-S-10015-2215-900-ntc-tra"))
+
+    def test_product_name_omits_default_code(self):
+        product = self.env["product.product"].create({
+            "name": "Corten Ring 450mm radius 200mm tall 3mm",
+            "default_code": "CorRin450-200-3",
+            "type": "product",
+        })
+        kind, name, code, detail = _label_fields(product)
+        self.assertEqual(kind, "product")
+        self.assertEqual(name, "Corten Ring 450mm radius 200mm tall 3mm")
+        self.assertEqual(code, "CorRin450-200-3")
+        self.assertEqual(detail, "CorRin450-200-3")
 
     def test_location_lines(self):
         self.assertEqual(derive_location("AUC/UCC/R01/B03-L2"), ("UCC / R01", "B03-L2"))
