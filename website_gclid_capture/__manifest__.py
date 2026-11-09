@@ -1,7 +1,7 @@
 {
     "name": "Website GCLID Capture",
     "summary": "Capture the Google Ads gclid as a first-party cookie for attribution",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
     "category": "Website",
     "author": "Rocersa",
     "license": "LGPL-3",

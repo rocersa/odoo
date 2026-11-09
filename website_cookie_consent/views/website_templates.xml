@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Pass the surface configuration to the consent asset. The asset itself
+         is in `web.assets_frontend` (see __manifest__.py); this script only
+         sets the data it reads, so it must render before the bundle parses. -->
+    <template id="cookie_consent_options" inherit_id="website.layout">
+        <xpath expr="//head" position="inside">
+            <t t-if="not editable">
+                <t t-set="rocersa_country"
+                   t-value="'uk' if website.company_id.country_id.code == 'GB' else (website.company_id.country_id.code or 'other').lower()"/>
+                <script id="rocersa_consent_options">
+                    window.__ROCERSA_CONSENT_OPTS__ = {
+                        country: '<t t-out="rocersa_country"/>',
+                        privacyUrl: '/privacy-policy',
+                        granular: false
+                    };
+                </script>
+            </t>
+        </xpath>
+    </template>
+</odoo>

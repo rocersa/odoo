@@ -7,27 +7,33 @@
          on the first page of the session. On direct visits (no gclid param)
          the existing cookie is left intact (last-non-direct-click attribution).
 
-         G6 (consent) is deferred to roadmap.md#cookie-compliance-investigation
-         and must be resolved before this ships to production. The current
-         implementation writes immediately on landing; a gated variant would
-         need to stash the value in sessionStorage and write it on the
-         optionalCookiesAccepted event (mirroring website_posthog_experiments),
-         because by the time consent is granted the URL param is gone. -->
+         G6 consent (decided 2026-08-14, built 2026-11-09): on a `.co.uk` host
+         the cookie is written only after marketing consent. Before consent the
+         value is stashed in sessionStorage — the URL parameter is gone by the
+         time the visitor accepts, so `website_cookie_consent`'s banner flushes
+         `rocersa_pending_gclid` to the apex cookie on accept. AU/NZ/US keep the
+         unconditional write. -->
     <template id="gclid_capture_snippet" inherit_id="website.layout">
         <xpath expr="//head" position="inside">
             <t t-if="not editable">
                 <script id="gclid_capture">
                     (function () {
                         var gclid = new URLSearchParams(location.search).get('gclid');
-                        if (gclid &amp;&amp; /^[A-Za-z0-9_-]{1,100}$/.test(gclid)) {
-                            var apex = location.hostname.replace(/^www\./, '');
-                            // Host-only cookie when there is no dot (localhost/IP);
-                            // Domain=apex otherwise so the products subdomain can read it.
-                            var domain = apex.includes('.') ? '; domain=' + apex : '';
-                            document.cookie = 'gclid=' + gclid +
-                                '; path=/' + domain +
-                                '; max-age=7776000; samesite=lax; secure';
+                        if (!gclid || !/^[A-Za-z0-9_-]{1,100}$/.test(gclid)) return;
+                        var apex = location.hostname.replace(/^(www|products)\./, '');
+                        // Host-only cookie when there is no dot (localhost/IP);
+                        // Domain=apex otherwise so the products subdomain can read it.
+                        var domain = apex.includes('.') ? '; domain=' + apex : '';
+                        var uk = /(^|\.)co\.uk$/i.test(location.hostname);
+                        var consent = /(?:^|;\s*)rocersa_consent=v1:([01]):([01]):/.exec(document.cookie || '');
+                        var marketing = !!(consent &amp;&amp; consent[2] === '1');
+                        if (uk &amp;&amp; !marketing) {
+                            try { sessionStorage.setItem('rocersa_pending_gclid', gclid); } catch (e) {}
+                            return;
                         }
+                        document.cookie = 'gclid=' + gclid +
+                            '; path=/' + domain +
+                            '; max-age=7776000; samesite=lax; secure';
                     })();
                 </script>
             </t>
