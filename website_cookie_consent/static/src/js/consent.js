@@ -29,8 +29,8 @@
         return { analytics: m[1] === '1', marketing: m[2] === '1', ts: Number(m[3]) };
     }
 
-    function serialise(state) {
-        return 'v1:' + (state.analytics ? 1 : 0) + ':' + (state.marketing ? 1 : 0) + ':' + (state.ts || Date.now());
+    function serialise(decision) {
+        return 'v1:' + (decision.analytics ? 1 : 0) + ':' + (decision.marketing ? 1 : 0) + ':' + (decision.ts || Date.now());
     }
 
     function apexOf(host) {
@@ -47,9 +47,9 @@
             '; Path=/; Max-Age=' + MAX_AGE + '; SameSite=Lax' + domain + secure;
     }
 
-    function gtagUpdate(state) {
-        var analytics = state.analytics ? 'granted' : 'denied';
-        var marketing = state.marketing ? 'granted' : 'denied';
+    function gtagUpdate(decision) {
+        var analytics = decision.analytics ? 'granted' : 'denied';
+        var marketing = decision.marketing ? 'granted' : 'denied';
         if (typeof global.gtag === 'function') {
             global.gtag('consent', 'update', {
                 ad_storage: marketing,
