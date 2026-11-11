@@ -6,10 +6,11 @@
         same template also prints receipts, which keep the stock layout, so
         every change here is guarded on ``o.picking_type_id.code != 'incoming'``.
 
-        The pick list is printed **one line per product**, not one per kit:
-        components shared by several kits are amalgamated (quantity and weight
-        summed) by ``stock.picking._brand_amalgamated_lines``. Columns are
-        Code | Product | Weight | Quantity.
+        The pick list is printed **one line per product and source location**,
+        not one per kit: components shared by several kits are amalgamated
+        (quantity and weight summed) by ``stock.picking._brand_amalgamated_lines``.
+        Columns are Code | Product | From | Weight | Quantity. The barcode
+        column is dropped for these picking types; receipts keep it.
 
         On an outgoing delivery the delivery address is moved to the top-left
         and enlarged, with the title moved to the right beside the barcode.
@@ -74,11 +75,17 @@
              delivery address already shows: drop it. -->
         <xpath expr="//div[@name='div_customer_address']" position="replace"/>
 
-        <!-- Header: Code before Product, Weight before Quantity
-             (internal + outgoing), giving Code | Product | Weight | Quantity. -->
+        <!-- Header: Code before Product, From after Product, Weight before
+             Quantity (internal + outgoing), giving
+             Code | Product | From | Weight | Quantity. -->
         <xpath expr="//th[@name='th_product']" position="before">
             <th name="th_product_code" class="text-start" t-if="o.picking_type_id.code != 'incoming'">
                 <strong>Code</strong>
+            </th>
+        </xpath>
+        <xpath expr="//th[@name='th_product']" position="after">
+            <th name="th_source_location" class="text-start" t-if="o.picking_type_id.code != 'incoming'">
+                <strong>From</strong>
             </th>
         </xpath>
         <xpath expr="//th[@name='th_quantity']" position="before">
@@ -87,8 +94,13 @@
             </th>
         </xpath>
 
-        <!-- Location columns: From is dropped on every picking type, To only
-             remains on receipts. -->
+        <!-- Barcode: dropped from the brand pick list; receipts keep it. -->
+        <xpath expr="//th[@name='th_barcode']" position="attributes">
+            <attribute name="t-if">barcode_col_exists and o.picking_type_id.code == 'incoming'</attribute>
+        </xpath>
+
+        <!-- Base From/To columns: From is replaced by the head of this report's
+             own From column; To only remains on receipts. -->
         <xpath expr="//t[@t-set='from_col_exists']" position="attributes">
             <attribute name="t-value">False</attribute>
         </xpath>
@@ -111,21 +123,15 @@
                     <td class="text-start">
                         <span t-out="product.name"/>
                     </td>
+                    <td class="text-start">
+                        <span t-out="line['location'].complete_name"/>
+                    </td>
                     <td class="text-end">
                         <span t-out="line['weight']" t-options="{'widget': 'float', 'precision': 2}"/>
                         <span t-out="product.weight_uom_name"/>
                     </td>
                     <td class="o_td_quantity text-end">
                         <span t-out="format_number(line['quantity'])" class="text-nowrap"/>
-                    </td>
-                    <td class="text-center" t-if="barcode_col_exists">
-                        <span t-if="product.barcode">
-                            <div t-field="product.barcode" t-options="{'widget': 'barcode', 'symbology': 'auto', 'width': 400, 'height': 100, 'quiet': 0, 'img_style': 'height:35px;'}">
-                                <div class="bg-light border-1 rounded d-flex flex-column align-items-center justify-content-center px-1 py-2 opacity-75 text-muted text-center">
-                                    (product barcode)
-                                </div>
-                            </div>
-                        </span>
                     </td>
                 </tr>
             </t>

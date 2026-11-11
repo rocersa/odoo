@@ -138,6 +138,12 @@ body,
     width: 16%;
 }
 
+/* Source location ("From") is back as column 3. Full paths such as
+ * AUC/Stock/Unit 3/Rack 1/Bay 1 wrap rather than truncate. */
+.o_report_stockpicking_operations.o_brand_pick th[name='th_source_location'] {
+    width: 28%;
+}
+
 /* Weight holds "<n>.<nn> kg". */
 .o_report_stockpicking_operations.o_brand_pick th[name='th_weight'] {
     width: 14%;
