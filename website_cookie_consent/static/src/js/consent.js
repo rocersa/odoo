@@ -168,7 +168,6 @@
 
     function showBanner() {
         if (banner || !global.document.body) return;
-        var policy = options.privacyUrl || '/privacy-policy';
         banner = el('div', {
             id: 'rocersa-consent-banner',
             role: 'dialog',
@@ -187,10 +186,18 @@
         var body = el('p', { style: 'margin:0;' },
             'We use essential cookies to run the site, and optional analytics and marketing cookies ' +
             'to understand how it is used and measure our ads. Optional cookies stay off until you ' +
-            'accept them. ');
-        var link = el('a', { href: policy, style: 'color:#c2410c;text-decoration:underline;' }, 'Read our privacy policy');
-        body.appendChild(link);
-        body.appendChild(global.document.createTextNode('.'));
+            'accept them');
+        // `privacyUrl: false` suppresses the link where no policy page exists
+        // yet — better than shipping a 404. Every other surface passes a URL.
+        if (options.privacyUrl !== false) {
+            var policy = options.privacyUrl || '/privacy-policy';
+            body.appendChild(global.document.createTextNode('. '));
+            var link = el('a', { href: policy, style: 'color:#c2410c;text-decoration:underline;' }, 'Read our privacy policy');
+            body.appendChild(link);
+            body.appendChild(global.document.createTextNode('.'));
+        } else {
+            body.appendChild(global.document.createTextNode('.'));
+        }
         copy.appendChild(body);
         inner.appendChild(copy);
 
@@ -278,6 +285,10 @@
         }
         STATE.required = true;
         var stored = parse(readCookie(COOKIE));
+        // Consent Mode v2 wants `denied` signalled before any tag loads, on
+        // every visit. Signal it before deciding, then update for a returning
+        // visitor — otherwise GTM starts from its granted default.
+        gtagDefault();
         if (stored) {
             STATE.decided = true;
             STATE.analytics = stored.analytics;
@@ -287,7 +298,6 @@
             STATE.decided = false;
             STATE.analytics = false;
             STATE.marketing = false;
-            gtagDefault();
         }
         var boot = function () {
             if (!STATE.decided) {
