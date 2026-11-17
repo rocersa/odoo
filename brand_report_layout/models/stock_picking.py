@@ -5,6 +5,18 @@ from odoo import models
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
+    def _brand_delivery_partner(self):
+        """The partner whose address heads this picking's brand slip, or empty.
+
+        Outgoing deliveries and pick lists carry the customer on the picking
+        or on its first move. A plain internal transfer has no partner, so it
+        keeps the title in the top-left; receipts keep the stock layout.
+        """
+        self.ensure_one()
+        if self.picking_type_id.code == 'incoming':
+            return self.env['res.partner']
+        return self.move_ids[:1].partner_id or self.partner_id
+
     def _brand_amalgamated_lines(self):
         """One line per product and source location for the picklist.
 

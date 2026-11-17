@@ -12,8 +12,10 @@
         Columns are Code | Product | From | Weight | Quantity. The barcode
         column is dropped for these picking types; receipts keep it.
 
-        On an outgoing delivery the delivery address is moved to the top-left
-        and enlarged, with the title moved to the right beside the barcode.
+        On an outgoing delivery, or any transfer that carries a customer
+        partner (a Corten pick list), the delivery address moves to the
+        top-left and the title moves to the right beside the barcode. A
+        transfer with no partner keeps the title top-left.
 
         Widths and the enlarged delivery address live in brand_report.css,
         scoped to the ``o_brand_pick`` class this template adds to the page.
@@ -30,15 +32,18 @@
             <attribute name="t-attf-class">page o_report_stockpicking_operations{{ ' o_brand_pick' if o.picking_type_id.code != 'incoming' else '' }}</attribute>
         </xpath>
 
-        <!-- Outgoing deliveries: put the delivery address in the top-left (where
-             the title sits) and move the title to the right, with the barcode.
-             Internal transfers and receipts keep the title top-left. -->
+        <!-- When a partner is set (an outgoing delivery, or a pick list such
+             as AUC/PICK), put the delivery address in the top-left where the
+             title sits and move the title to the right, with the barcode. A
+             plain internal transfer has no partner, and receipts keep the
+             stock layout, so both keep the title top-left. -->
         <xpath expr="//div[h3[@t-field='o.picking_type_id.code']]" position="replace">
-            <t t-if="o.picking_type_id.code == 'outgoing'">
+            <t t-set="brand_dest" t-value="o._brand_delivery_partner()"/>
+            <t t-if="brand_dest">
                 <div class="col" name="div_pick_address">
-                    <div t-if="o.should_print_delivery_address()">
+                    <div>
                         <strong>Delivery Address:</strong>
-                        <t t-set="dest" t-value="o.move_ids[0].partner_id or o.partner_id"/>
+                        <t t-set="dest" t-value="brand_dest"/>
                         <t t-set="dest_company" t-value="dest.commercial_company_name or dest.parent_id.name"/>
                         <!-- Odoo's contact widget folds the partner and its
                              company into one line ("Company, Person"). Print
@@ -58,13 +63,13 @@
                 </div>
             </t>
         </xpath>
-        <!-- Right column: left-aligned, and for outgoing sized to its content
-             (the title, not col-8) so the delivery address gets the rest. -->
+        <!-- Right column: left-aligned, and when an address is shown sized to
+             its content (the title, not col-8) so the address gets the rest. -->
         <xpath expr="//div[@name='right_box']" position="attributes">
-            <attribute name="t-attf-class">{{ 'col-auto text-nowrap' if o.picking_type_id.code == 'outgoing' else 'col-8' }}</attribute>
+            <attribute name="t-attf-class">{{ 'col-auto text-nowrap' if o._brand_delivery_partner() else 'col-8' }}</attribute>
         </xpath>
         <xpath expr="//div[@name='right_box']/div[@t-field='o.name']" position="before">
-            <div t-if="o.picking_type_id.code == 'outgoing'">
+            <div t-if="o._brand_delivery_partner()">
                 <h3 t-field="o.picking_type_id.code"/>
                 <h2 t-field="o.name">WH/OUT/00001</h2>
             </div>
