@@ -162,6 +162,27 @@ body,
     margin-bottom: 16px !important;
 }
 
+/* Header barcode (the picking reference, top-right). The base report shrinks
+ * a 600 x 100 px PNG into 300 x 50 px, which leaves ~2.7 px per Code 128
+ * module and lets reportlab's antialiased bar edges blur at A4 size. The
+ * template now asks for a 1248 x 416 px PNG (8 px per module for the usual
+ * 12-character reference) with the quiet zone off. Print it at a fixed
+ * physical size, with the 10x-module quiet zone as padding, and ask the
+ * renderer not to smooth the bars. `content-box` keeps the padding outside
+ * the 73 mm data width. wkhtmltopdf's smart shrink scales the 82 mm box to
+ * about 70 x 20 mm on A4, leaving ~0.35 mm per module on the pick references
+ * (AUC/PICK/00104 and friends) and a ~4 mm quiet zone each side. */
+.o_report_stockpicking_operations.o_brand_pick [name='right_box'] img {
+    width: 73mm !important;
+    height: 24mm !important;
+    padding: 0 4.5mm !important;
+    box-sizing: content-box !important;
+    flex-shrink: 0 !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
 /* Delivery address (outgoing deliveries and pick lists with a customer):
  * sits top-left. Only the address body is doubled in size; the
  * "Delivery Address:" label stays normal. */

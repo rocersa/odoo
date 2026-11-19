@@ -68,6 +68,19 @@
         <xpath expr="//div[@name='right_box']" position="attributes">
             <attribute name="t-attf-class">{{ 'col-auto text-nowrap' if o._brand_delivery_partner() else 'col-8' }}</attribute>
         </xpath>
+
+        <!-- Header barcode (the picking reference, top-right). The base report
+             renders a 600 x 100 px PNG into 300 x 50 CSS px: about 3 px per
+             Code 128 module, so reportlab's antialiased bar edges blur at A4
+             print size. Request a much larger PNG instead (1466 px: ~8-10 px
+             per module across the reference lengths the companies use) with
+             the quiet zone turned off, and let brand_report.css print it at a
+             fixed physical size with the quiet zone as padding. The PNG is
+             embedded in the PDF at its native resolution, so the bars keep
+             crisp edges on the page. -->
+        <xpath expr="//div[@name='right_box']/div[@t-field='o.name']" position="attributes">
+            <attribute name="t-options">{'widget': 'barcode', 'symbology': 'Code128', 'width': 1466, 'height': 482, 'quiet': 0}</attribute>
+        </xpath>
         <xpath expr="//div[@name='right_box']/div[@t-field='o.name']" position="before">
             <div t-if="o._brand_delivery_partner()">
                 <h3 t-field="o.picking_type_id.code"/>
