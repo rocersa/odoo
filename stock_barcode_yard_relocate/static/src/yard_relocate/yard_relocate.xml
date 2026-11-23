@@ -33,16 +33,22 @@
                     </div>
                 </div>
 
-                <div class="o_yard_prompt text-center mt-4 mb-3">
+                <div class="o_yard_prompt text-center mt-3 mb-3">
                     <div class="fs-3 fw-bold" t-out="prompt"/>
                     <div class="text-muted" t-out="promptHelp"/>
                 </div>
 
-                <div class="o_yard_scan text-center mb-4" t-on-click="openScanner">
+                <div t-if="state.cameraScannedEnabled" class="o_yard_scanner mb-3">
+                    <BarcodeVideoScanner t-props="barcodeVideoScannerProps"/>
+                </div>
+                <div t-elif="state.cameraScannerSupported" class="o_yard_scan text-center mb-4" t-on-click="startScanner">
                     <div class="o_yard_scan_target d-flex align-items-center justify-content-center m-auto rounded">
-                        <i class="fa fa-barcode fa-4x text-primary"/>
+                        <i class="fa fa-camera fa-4x text-primary"/>
                     </div>
-                    <div class="text-primary fw-bold mt-2">Tap to scan</div>
+                    <div class="text-primary fw-bold mt-2">Tap to start the camera</div>
+                </div>
+                <div t-else="" class="o_yard_no_camera text-center text-muted mb-4">
+                    This device has no camera. Use a handheld scanner.
                 </div>
 
                 <div t-if="state.stage === 'products'" class="o_yard_lines">

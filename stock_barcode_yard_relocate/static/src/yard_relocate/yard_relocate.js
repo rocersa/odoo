@@ -1,9 +1,12 @@
 /** @odoo-module **/
 
 import {_t} from "@web/core/l10n/translation";
-import {Component, useState} from "@odoo/owl";
+import {Component, onMounted, useState} from "@odoo/owl";
 import {ConfirmationDialog} from "@web/core/confirmation_dialog/confirmation_dialog";
-import {ManualBarcodeScanner} from "@barcodes/components/manual_barcode";
+import {
+    BarcodeVideoScanner,
+    isBarcodeScannerSupported,
+} from "@web/core/barcode/barcode_video_scanner";
 import {registry} from "@web/core/registry";
 import {standardActionServiceProps} from "@web/webclient/actions/action_service";
 import {useBus, useService} from "@web/core/utils/hooks";
@@ -12,6 +15,7 @@ const MODEL = "stock.yard.relocate";
 
 export class YardRelocate extends Component {
     static template = "stock_barcode_yard_relocate.YardRelocate";
+    static components = {BarcodeVideoScanner};
     static props = {...standardActionServiceProps};
 
     setup() {
@@ -26,12 +30,29 @@ export class YardRelocate extends Component {
             destination: null,
             lines: [],
             busy: false,
+            cameraScannerSupported: isBarcodeScannerSupported(),
+            cameraScannedEnabled: false,
         });
         // Serialise scans and the confirm, so a quick second scan is not lost.
         this._queue = Promise.resolve();
+        // A label left in front of the camera is detected again after the pause;
+        // ignore a repeat of the same barcode for a moment instead of warning.
+        this._lastScanned = {barcode: null, at: 0};
         useBus(this.barcodeService.bus, "barcode_scanned", (ev) =>
             this._enqueue(() => this.onBarcodeScanned(ev.detail.barcode))
         );
+        // The same inline scanner the barcode app's count screen uses: it stays
+        // mounted and armed across every step, and has no text input to raise the
+        // on-screen keyboard.
+        this.barcodeVideoScannerProps = {
+            delayBetweenScan: 2000,
+            facingMode: "environment",
+            cssClass: "o_yard_relocate_video",
+            onResult: (barcode) =>
+                this._enqueue(() => this.onBarcodeScanned(barcode)),
+            onError: (error) => this._onScannerError(error),
+        };
+        onMounted(() => this.startScanner());
     }
 
     get stepLabel() {
@@ -65,24 +86,32 @@ export class YardRelocate extends Component {
         this._queue = this._queue.then(task).catch((error) => this._notifyError(error));
     }
 
-    openScanner() {
-        const promise = new Promise((resolve, reject) => {
-            this.dialog.add(ManualBarcodeScanner, {
-                facingMode: "environment",
-                onResult: (barcode) => {
-                    this._enqueue(() => this.onBarcodeScanned(barcode));
-                    resolve(barcode);
-                },
-                onError: (error) => reject(error),
-            });
-        });
-        promise.catch((error) => console.log(error));
-        return promise;
+    startScanner() {
+        if (this.state.cameraScannerSupported) {
+            this.state.cameraScannedEnabled = true;
+        }
+    }
+
+    _onScannerError(error) {
+        this.state.cameraScannedEnabled = false;
+        const message = error?.message || _t("Could not start the camera.");
+        this.notification.add(message, {type: "warning"});
     }
 
     async onBarcodeScanned(barcode) {
         if (!barcode) {
             return;
+        }
+        const now = Date.now();
+        if (
+            barcode === this._lastScanned.barcode &&
+            now - this._lastScanned.at < 3000
+        ) {
+            return;
+        }
+        this._lastScanned = {barcode, at: now};
+        if ("vibrate" in window.navigator) {
+            window.navigator.vibrate(100);
         }
         if (this.state.stage === "source") {
             await this._scanSource(barcode);

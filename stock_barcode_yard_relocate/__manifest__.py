@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Barcode Yard Relocate",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Move a product's full quantity between locations from the barcode app",
     "description": """
 Yard relocate
