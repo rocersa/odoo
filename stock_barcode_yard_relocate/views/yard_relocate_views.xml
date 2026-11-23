@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Opened from the barcode app's home screen, never from the main menu. -->
+    <record id="action_yard_relocate" model="ir.actions.client">
+        <field name="name">Move stock</field>
+        <field name="tag">stock_barcode_yard_relocate</field>
+        <field name="target">fullscreen</field>
+    </record>
+
+</odoo>
