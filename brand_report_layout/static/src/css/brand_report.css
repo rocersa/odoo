@@ -163,21 +163,29 @@ body,
 }
 
 /* Header barcode (the picking reference, top-right). The base report shrinks
- * a 600 x 100 px PNG into 300 x 50 px, which leaves ~2.7 px per Code 128
- * module and lets reportlab's antialiased bar edges blur at A4 size. The
- * template now asks for a 1248 x 416 px PNG (8 px per module for the usual
- * 12-character reference) with the quiet zone off. Print it at a fixed
- * physical size, with the 10x-module quiet zone as padding, and ask the
- * renderer not to smooth the bars. `content-box` keeps the padding outside
- * the 73 mm data width. wkhtmltopdf's smart shrink scales the 82 mm box to
- * about 70 x 20 mm on A4, leaving ~0.35 mm per module on the pick references
- * (AUC/PICK/00104 and friends) and a ~4 mm quiet zone each side. */
+ * a 600 x 100 px PNG into 300 x 50 px, which leaves about 1.2 px per Code 128
+ * module at the pick list's printed scale, so reportlab's antialiased bar
+ * edges blur. The template asks for a 1800 x 592 px PNG instead (~10 px per
+ * module for the usual 14-character reference) with the quiet zone off, and
+ * this rule prints it at a fixed physical size, with the 10x-module quiet zone
+ * as padding. `content-box` keeps the padding outside the 83 mm data width;
+ * `image-rendering: pixelated` asks the renderer not to smooth the bars.
+ *
+ * The pick report's stock header row does not wrap under wkhtmltopdf's old
+ * QtWebKit (the base CSS relies on flex-wrap, which the -webkit-box display
+ * ignores), so the whole page smart-shrinks to fit. On a pick with a Contact
+ * field that is about 0.73x: 83 mm prints at ~60 x 20 mm, ~0.34 mm per module
+ * for AUC/PICK/00104. The outbound page, which has no Contact field, shrinks
+ * ~0.84x and prints ~70 x 23 mm. Both are well above the 0.33 mm module width
+ * the A4 laser/inkjet needs, with a >=3.6 mm quiet zone (10+ modules) each
+ * side. */
 .o_report_stockpicking_operations.o_brand_pick [name='right_box'] img {
-    width: 73mm !important;
-    height: 24mm !important;
-    padding: 0 4.5mm !important;
+    width: 83mm !important;
+    height: 27.29mm !important;
+    padding: 0 5mm !important;
     box-sizing: content-box !important;
     flex-shrink: 0 !important;
+    max-width: none !important;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
