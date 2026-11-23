@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--
+      The storefront's `update_retail_cost()` prices these non-standard panel
+      lengths at the next standard length the catalogue sells (the `overrides`
+      table). Seed the same map here so the Odoo quote agrees with retail.
+      `noupdate="1"`: seeded once; change a row, not this file, once live.
+    -->
+    <data noupdate="1">
+        <record id="proxy_75" model="gabion.panel.override">
+            <field name="current_length">75</field>
+            <field name="proxy_length">300</field>
+        </record>
+        <record id="proxy_150" model="gabion.panel.override">
+            <field name="current_length">150</field>
+            <field name="proxy_length">300</field>
+        </record>
+        <record id="proxy_225" model="gabion.panel.override">
+            <field name="current_length">225</field>
+            <field name="proxy_length">300</field>
+        </record>
+        <record id="proxy_1125" model="gabion.panel.override">
+            <field name="current_length">1125</field>
+            <field name="proxy_length">1200</field>
+        </record>
+        <record id="proxy_1275" model="gabion.panel.override">
+            <field name="current_length">1275</field>
+            <field name="proxy_length">1350</field>
+        </record>
+        <record id="proxy_1425" model="gabion.panel.override">
+            <field name="current_length">1425</field>
+            <field name="proxy_length">1500</field>
+        </record>
+        <record id="proxy_1800" model="gabion.panel.override">
+            <field name="current_length">1800</field>
+            <field name="proxy_length">2100</field>
+        </record>
+        <record id="proxy_1875" model="gabion.panel.override">
+            <field name="current_length">1875</field>
+            <field name="proxy_length">2100</field>
+        </record>
+        <record id="proxy_1950" model="gabion.panel.override">
+            <field name="current_length">1950</field>
+            <field name="proxy_length">2100</field>
+        </record>
+        <record id="proxy_2025" model="gabion.panel.override">
+            <field name="current_length">2025</field>
+            <field name="proxy_length">2100</field>
+        </record>
+    </data>
+</odoo>
