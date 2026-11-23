@@ -63,8 +63,9 @@
                 </div>
             </t>
         </xpath>
-        <!-- Right column: left-aligned, and when an address is shown sized to
-             its content (the title, not col-8) so the address gets the rest. -->
+        <!-- Right column: when an address is shown, the title lines above the
+             barcode are right-aligned (see brand_report.css) and the column is
+             sized to its content so the address gets the rest. -->
         <xpath expr="//div[@name='right_box']" position="attributes">
             <attribute name="t-attf-class">{{ 'col-auto text-nowrap' if o._brand_delivery_partner() else 'col-8' }}</attribute>
         </xpath>
@@ -82,7 +83,7 @@
             <attribute name="t-options">{'widget': 'barcode', 'symbology': 'Code128', 'width': 1800, 'height': 592, 'quiet': 0}</attribute>
         </xpath>
         <xpath expr="//div[@name='right_box']/div[@t-field='o.name']" position="before">
-            <div t-if="o._brand_delivery_partner()">
+            <div t-if="o._brand_delivery_partner()" name="div_pick_header">
                 <h3 t-field="o.picking_type_id.code"/>
                 <h2 t-field="o.name">WH/OUT/00001</h2>
             </div>
