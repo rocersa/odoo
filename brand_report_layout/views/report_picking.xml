@@ -88,6 +88,22 @@
                 <h2 t-field="o.name">WH/OUT/00001</h2>
             </div>
         </xpath>
+        <!-- Header row width. The stock row is a single horizontal box under
+             wkhtmltopdf's old -webkit-box: it ignores the base CSS's
+             flex-wrap, so every field sits on one line and the report
+             smart-shrinks the whole page to fit. With a carrier set the pick
+             row also carries Carrier, Weight and Shipping Method, and the
+             shrink gets strong enough to push the row past the printable
+             edge and to shrink the barcode with it. Drop Warehouse and
+             Contact — neither is needed on a pick list — so Order, Status,
+             Operator, Scheduled Date, Carrier, Weight and Shipping Method fit
+             and the page keeps its scale. Receipts keep the stock row. -->
+        <xpath expr="//div[@name='div_warehouse']" position="attributes">
+            <attribute name="t-if">o.picking_type_id.code == 'incoming'</attribute>
+        </xpath>
+        <xpath expr="//div[@name='div_contact']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
         <!-- The delivery address now sits top-left: drop the row-2 copy. -->
         <xpath expr="//div[@name='div_outgoing_address']" position="replace"/>
         <!-- The Customer Address block only repeats the partner, which the
