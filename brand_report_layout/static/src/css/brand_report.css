@@ -162,6 +162,46 @@ body,
     margin-bottom: 16px !important;
 }
 
+/* Header barcode (the picking reference, top-right). The base report shrinks
+ * a 600 x 100 px PNG into 300 x 50 px, which leaves about 1.2 px per Code 128
+ * module at the pick list's printed scale, so reportlab's antialiased bar
+ * edges blur. The template asks for a 1800 x 592 px PNG instead (~10 px per
+ * module for the usual 14-character reference) with the quiet zone off, and
+ * this rule prints it at a fixed physical size, with the 10x-module quiet zone
+ * as padding. `content-box` keeps the padding outside the 83 mm data width;
+ * `image-rendering: pixelated` asks the renderer not to smooth the bars.
+ *
+ * The pick report's stock header row does not wrap under wkhtmltopdf's old
+ * QtWebKit (the base CSS relies on flex-wrap, which the -webkit-box display
+ * ignores), so the whole page smart-shrinks to fit. On a pick with a Contact
+ * field that is about 0.73x: 83 mm prints at ~60 x 20 mm, ~0.34 mm per module
+ * for AUC/PICK/00104. The outbound page, which has no Contact field, shrinks
+ * ~0.84x and prints ~70 x 23 mm. Both are well above the 0.33 mm module width
+ * the A4 laser/inkjet needs, with a >=3.6 mm quiet zone (10+ modules) each
+ * side. */
+.o_report_stockpicking_operations.o_brand_pick [name='right_box'] img {
+    width: 83mm !important;
+    height: 27.29mm !important;
+    padding: 0 5mm !important;
+    box-sizing: content-box !important;
+    flex-shrink: 0 !important;
+    max-width: none !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* Header text above the barcode (the picking type and the reference, e.g.
+ * "Internal Transfer" / "AUC/PICK/00105") sits flush right with the barcode's
+ * bars, so the two-line title reads as part of the barcode block rather than
+ * trailing off the left of the address column. The right padding matches the
+ * barcode image's 5 mm quiet zone, so the text edge lands on the last bar
+ * rather than on the image box's blank edge. */
+.o_report_stockpicking_operations.o_brand_pick [name='div_pick_header'] {
+    text-align: right !important;
+    padding-right: 5mm !important;
+}
+
 /* Delivery address (outgoing deliveries and pick lists with a customer):
  * sits top-left. Only the address body is doubled in size; the
  * "Delivery Address:" label stays normal. */
