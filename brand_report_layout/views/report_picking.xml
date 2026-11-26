@@ -104,6 +104,30 @@
         <xpath expr="//div[@name='div_contact']" position="attributes">
             <attribute name="t-if">False</attribute>
         </xpath>
+        <!-- Carrier, Weight and Shipping Method. stock_delivery.report_shipping2
+             adds these after div_picking_date, but that view only contributes
+             when it is applied at report time; on the staging database it is
+             not, so the three fields dropped out of the printed pick. Render
+             them here instead, so the pick report does not depend on that
+             inherited view. The brand inheritance of stock_delivery's view
+             below removes the stock copies where it does apply, so each field
+             prints once. -->
+        <xpath expr="//div[@name='div_picking_date']" position="after">
+            <div t-if="o.carrier_id" name="div_brand_carrier">
+                <strong>Carrier:</strong>
+                <p t-field="o.carrier_id"/>
+            </div>
+            <div t-if="o.shipping_weight" name="div_brand_weight">
+                <strong>Weight:</strong>
+                <br/>
+                <span t-field="o.shipping_weight" t-options="{'widget': 'float', 'precision': 2}"/>
+                <span t-field="o.weight_uom_name"/>
+            </div>
+            <div t-if="o.carrier_id" class="col" name="div_brand_shipping_method">
+                <strong>Shipping Method:</strong>
+                <p t-field="o.carrier_id">FedEx</p>
+            </div>
+        </xpath>
         <!-- The delivery address now sits top-left: drop the row-2 copy. -->
         <xpath expr="//div[@name='div_outgoing_address']" position="replace"/>
         <!-- The Customer Address block only repeats the partner, which the
@@ -180,10 +204,16 @@
     -->
     <template id="report_picking_header_weight"
               inherit_id="stock_delivery.report_shipping2"
-              name="Picking Operations — header weight to 2dp">
-        <xpath expr="//span[@t-field='o.shipping_weight']" position="attributes">
-            <attribute name="t-options">{'widget': 'float', 'precision': 2}</attribute>
-        </xpath>
+              name="Picking Operations — brand renders the carrier block">
+        <!-- stock_delivery adds Carrier, Weight and Shipping Method after
+             div_picking_date. Brand renders those itself (see
+             report_picking_brand_pick), so remove the stock copies here, where
+             this view is only applied if stock_delivery's view is. The
+             not(@name='div_brand_…') guards keep brand's own nodes if view
+             application order ever puts them first. -->
+        <xpath expr="//div[strong[normalize-space(text())='Carrier:']][not(@name='div_brand_carrier')]" position="replace"/>
+        <xpath expr="//div[strong[normalize-space(text())='Weight:']][not(@name='div_brand_weight')]" position="replace"/>
+        <xpath expr="//div[@name='div_shipping_method']" position="replace"/>
     </template>
 
     <!--
