@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Put "Move stock" at the top of the barcode app's home screen footer. -->
+    <t t-name="stock_barcode_yard_relocate.MainMenu" t-inherit="stock_barcode.MainMenu" t-inherit-mode="extension">
+        <xpath expr="//footer/*[1]" position="before">
+            <button class="o_button_yard_relocate btn btn-block btn-primary mb-3 p-3 w-100"
+                    t-on-click="() => this.actionService.doAction('stock_barcode_yard_relocate.action_yard_relocate')">
+                Move stock
+            </button>
+        </xpath>
+    </t>
+
+    <t t-name="stock_barcode_yard_relocate.YardRelocate">
+        <div class="o_yard_relocate h-100 w-100 d-flex flex-column bg-view">
+            <header class="o_yard_relocate_header d-flex align-items-center gap-2 px-3 py-2 border-bottom">
+                <button class="o_yard_home btn btn-light" t-on-click="onClose" title="Back to the barcode menu">
+                    <i class="fa fa-arrow-left"/>
+                </button>
+                <span class="fs-4 fw-bold">Move stock</span>
+                <span class="ms-auto badge rounded-pill text-bg-secondary o_yard_step" t-out="stepLabel"/>
+            </header>
+
+            <main class="o_yard_relocate_body flex-grow-1 overflow-auto px-3 py-3">
+                <div class="o_yard_locations mb-3">
+                    <div t-if="state.source" class="o_yard_location o_yard_source p-2 mb-2 rounded">
+                        <div class="text-muted small text-uppercase">From</div>
+                        <div class="fs-5 fw-bold text-break" t-out="state.source.name"/>
+                    </div>
+                    <div t-if="state.destination" class="o_yard_location o_yard_destination p-2 rounded">
+                        <div class="text-muted small text-uppercase">To</div>
+                        <div class="fs-5 fw-bold text-break" t-out="state.destination.name"/>
+                    </div>
+                </div>
+
+                <div class="o_yard_prompt text-center mt-3 mb-3">
+                    <div class="fs-3 fw-bold" t-out="prompt"/>
+                    <div class="text-muted" t-out="promptHelp"/>
+                </div>
+
+                <div t-if="state.cameraScannedEnabled" class="o_yard_scanner mb-3">
+                    <BarcodeVideoScanner t-props="barcodeVideoScannerProps"/>
+                </div>
+                <div t-elif="state.cameraScannerSupported" class="o_yard_scan text-center mb-4" t-on-click="startScanner">
+                    <div class="o_yard_scan_target d-flex align-items-center justify-content-center m-auto rounded">
+                        <i class="fa fa-camera fa-4x text-primary"/>
+                    </div>
+                    <div class="text-primary fw-bold mt-2">Tap to start the camera</div>
+                </div>
+                <div t-else="" class="o_yard_no_camera text-center text-muted mb-4">
+                    This device has no camera. Use a handheld scanner.
+                </div>
+
+                <div t-if="state.stage === 'products'" class="o_yard_lines">
+                    <div t-if="!state.lines.length" class="o_yard_empty text-center text-muted py-4">
+                        Scan each product that is at the source. Nothing moves until you confirm.
+                    </div>
+                    <div t-foreach="state.lines" t-as="line" t-key="line.product_id"
+                         class="o_yard_line d-flex align-items-center p-2 mb-2 border rounded">
+                        <div class="flex-grow-1 me-2">
+                            <div class="fw-bold text-break" t-out="line.name"/>
+                        </div>
+                        <div class="text-end me-3">
+                            <div class="fs-5 fw-bold" t-out="line.qty"/>
+                            <div class="small text-muted" t-out="line.uom"/>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" title="Remove"
+                                t-on-click="() => this.removeLine(line.product_id)">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <footer t-if="state.stage === 'products'" class="o_yard_relocate_footer px-3 py-3 border-top">
+                <button class="btn btn-primary btn-lg w-100 o_yard_confirm" t-on-click="onConfirm"
+                        t-att-disabled="!state.lines.length || state.busy">
+                    <i class="fa fa-check me-2"/>
+                    Confirm move
+                    <span t-if="state.lines.length" t-out="`(${state.lines.length})`"/>
+                </button>
+                <button class="btn btn-link w-100 mt-2" t-on-click="onStartOver">
+                    Start over
+                </button>
+            </footer>
+        </div>
+    </t>
+
+</templates>

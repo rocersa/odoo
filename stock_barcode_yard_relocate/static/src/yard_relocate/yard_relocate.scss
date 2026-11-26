@@ -1,0 +1,68 @@
+.o_yard_relocate {
+    .o_yard_relocate_header {
+        background-color: var(--bs-body-bg);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .o_yard_relocate_body {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .o_yard_location {
+        background-color: var(--bs-tertiary-bg);
+        border-left: 4px solid var(--bs-secondary);
+    }
+
+    .o_yard_source {
+        border-left-color: var(--bs-primary);
+    }
+
+    .o_yard_destination {
+        border-left-color: var(--bs-success);
+    }
+
+    .o_yard_scan_target {
+        width: 9rem;
+        height: 9rem;
+        max-width: 60vw;
+        max-height: 60vw;
+        background-color: var(--bs-tertiary-bg);
+        border: 2px dashed var(--bs-primary);
+        cursor: pointer;
+    }
+
+    .o_yard_scanner {
+        position: relative;
+        width: 100%;
+        height: 30vh;
+        min-height: 10rem;
+        max-height: 18rem;
+        overflow: hidden;
+        border-radius: 0.5rem;
+        background-color: #000;
+
+        .o_yard_relocate_video {
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .o_yard_line {
+        background-color: var(--bs-body-bg);
+    }
+
+    .o_yard_empty {
+        min-height: 6rem;
+    }
+
+    .o_yard_relocate_footer {
+        background-color: var(--bs-body-bg);
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+    }
+}
