@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_order_form_sale_pick_on_payment" model="ir.ui.view">
+        <field name="name">sale.order.form.sale.pick.on.payment</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <button name="action_view_invoice" position="before">
+                <button
+                    name="action_sale_pick_create_delivery"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-truck"
+                    invisible="not sale_pick_missing"
+                    groups="sales_team.group_sale_salesman"
+                >
+                    <span>Create<br/>Delivery</span>
+                </button>
+            </button>
+            <field name="client_order_ref" position="after">
+                <field name="pick_released"/>
+                <field name="pick_release_user_id" invisible="not pick_released"/>
+                <field name="pick_release_date" invisible="not pick_released"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>
